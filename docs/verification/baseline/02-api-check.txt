@@ -1,0 +1,11 @@
+cd api && gofmt -l . && go vet ./... && go test ./... -count=1
+?   	github.com/biletflow/api/cmd/api	[no test files]
+ok  	github.com/biletflow/api/internal/api	16.472s
+ok  	github.com/biletflow/api/internal/auth	1.511s
+ok  	github.com/biletflow/api/internal/config	1.200s
+?   	github.com/biletflow/api/internal/database	[no test files]
+ok  	github.com/biletflow/api/internal/email	0.992s
+?   	github.com/biletflow/api/internal/httpx	[no test files]
+ok  	github.com/biletflow/api/internal/store	1.424s
+?   	github.com/biletflow/api/internal/testutil	[no test files]
+ok  	github.com/biletflow/api/internal/ticketpdf	2.004s

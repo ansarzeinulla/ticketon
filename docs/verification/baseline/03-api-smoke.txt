@@ -1,0 +1,154 @@
+BiletFlow API acceptance checks (Phases 2-12)  ->  http://localhost:8080
+-----------------------------------------------------------
+PASS 00  API is reachable and healthy (HTTP 200)
+PASS 01  register with email and password (HTTP 201)
+     user id: 90768d09-d4a0-4ef7-a8ec-fa4d3a389d8a
+PASS 01b registering the same email again is rejected (HTTP 409)
+PASS 02  login returns a token (HTTP 200)
+     token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX...
+PASS 02b the token authenticates a protected request (HTTP 200)
+PASS 02c the wrong password is rejected (HTTP 401)
+PASS 03  POST /events with the token returns 201 Created (HTTP 201)
+     event id: d3641fb8-e40b-45ab-adf8-322406337cfd
+PASS 03b the event is physically in the events table
+     row: Smoke Test Concert 1787991658 | draft | 90768d09-d4a0-4ef7-a8ec-fa4d3a389d8a
+PASS 03c the event is owned by the registered user
+PASS 04  POST /events without a token is rejected (HTTP 401)
+PASS 05  an unpublished draft is not publicly readable (HTTP 404)
+PASS 06  the organizer can publish the event (HTTP 200)
+PASS 07  the published event is publicly readable (HTTP 200)
+PASS 08  organizer creates 5 tickets at 5000 KZT (HTTP 201)
+     ticket type id: c1553244-345c-41d3-a549-d76fbaa0f1c8
+PASS 08b a paid ticket cannot be bought before activation (HTTP 403)
+PASS 08c the refusal is an explicit paid_sales_not_active
+PASS 08d the blocked purchase issued no ticket
+PASS 08e the organizer reads the activation checklist (HTTP 200)
+PASS 08f it is not_started and required, because this event sells paid tickets
+PASS 09  two of the four steps are recorded (HTTP 200)
+PASS 09b a partial checklist does not open sales
+PASS 09c buying is still refused halfway through the checklist (HTTP 403)
+PASS 09d the organizer completes the checklist (HTTP 200)
+PASS 09e paid sales are now active
+PASS 09f PostgreSQL records the 5000.00 KZT activation fee as simulated
+PASS 09g events.paid_sales_enabled was set in step with the activation
+     slug: smoke-test-concert-1787991658
+PASS 09  the public event page lists the ticket type (HTTP 200)
+PASS 09b the public page reports 5 remaining
+PASS 10  an attendee buys 2 tickets with the simulated checkout (HTTP 201)
+PASS 10b the order is paid for 10000.00 KZT
+     order id: 1da313f3-4494-46e0-a633-fe44e2b0af9e
+PASS 11  PostgreSQL confirms quantity_sold is 2 with 3 remaining
+PASS 12  buying 4 more is rejected: only 3 remain (HTTP 409)
+PASS 12b the rejection is an explicit insufficient_inventory
+PASS 12c the rejected order changed no inventory
+PASS 13  the order confirmation is retrievable by id (HTTP 200)
+PASS 14  the admission token is TKT_<uuid>
+     token: TKT_700a5b3c-7307-4d6a-b29e-a92ce08bb603
+PASS 15  the ticket PDF is served as application/pdf
+PASS 15b it is sent as an attachment, so the browser downloads it
+PASS 16  the file is a real PDF (4044 bytes)
+PASS 17  the page is A4 (595.28 x 841.89 pt)
+PASS 18  the ticket exposes its delivery links (HTTP 200)
+PASS 19  the QR preview is served as a PNG
+PASS 20  organizer creates a 20% promo code, limit 1 (HTTP 201)
+PASS 20b the campaign token is CMP_<uuid>
+     token: CMP_27a30c61-9dac-4d22-8ce0-febf3f3beb99
+PASS 20c the campaign link carries the token and no discount value
+PASS 21  the campaign token prices a basket (HTTP 200)
+PASS 21b 5000 KZT less 20% is 4000 KZT
+PASS 22  an attendee checks out with the campaign discount (HTTP 201)
+PASS 22b the order is stored at the discounted 4000.00 KZT
+PASS 23  PostgreSQL confirms redemption_count is 1
+PASS 24  a second use of the single-use code is refused (HTTP 409)
+PASS 24b the refusal is an explicit promo_exhausted
+PASS 25  the gate refuses the bare campaign token (HTTP 400)
+PASS 25b the gate refuses the campaign QR link (HTTP 400)
+PASS 25c the refusal names it as a campaign code
+PASS 26  the ticket buyer registers an account (HTTP 201)
+PASS 26b they buy a ticket (HTTP 201)
+PASS 27  the attendee opens a support case on their order (HTTP 201)
+PASS 27b the case starts Open
+PASS 28  the case appears in the organizer's inbox (HTTP 200)
+PASS 29  the organizer replies (HTTP 201)
+PASS 29b replying moves the case to In Progress
+PASS 30  the organizer marks it Resolved (HTTP 200)
+PASS 31  the attendee re-reads the case (HTTP 200)
+PASS 31b they see the reply and the Resolved status
+PASS 32  an organizer cannot suspend their own event (HTTP 403)
+PASS 32b an anonymous caller cannot suspend an event (HTTP 401)
+PASS 33  a platform admin suspends the event (HTTP 200)
+PASS 33b PostgreSQL records the event as suspended
+PASS 34  checkout on a suspended event is refused (HTTP 403)
+PASS 34b the refusal is an explicit event_suspended
+PASS 34c no ticket was issued (4 before and after)
+PASS 35  the public page still resolves for a suspended event (HTTP 200)
+PASS 35b it is flagged suspended so the banner shows
+PASS 36  the organizer reads the analytics for the event (HTTP 200)
+PASS 36b tickets sold matches PostgreSQL (4)
+PASS 36c KZT revenue matches PostgreSQL (19000.00)
+PASS 36d check-ins match PostgreSQL (0)
+PASS 36e paid order count matches PostgreSQL (3)
+PASS 36f sold and check-in percentages are 80% and 0%, as computed from the rows
+PASS 37  analytics without a token is refused (HTTP 401)
+PASS 38  the event history is readable (HTTP 200)
+PASS 38b the history has 12 recorded entries
+PASS 39  the organizer duplicates the event (HTTP 201)
+     duplicate id: c6997754-6516-4e6c-a892-1a0fbde6a59f
+PASS 39b the copy comes back as a draft
+PASS 40  PostgreSQL confirms the copy is draft with 0 orders, 0 sold, 0 check-ins
+PASS 40b the copy carries the same venue, timezone and capacity, and records its origin
+PASS 40c every ticket type was copied (1), with the inventory reset to zero
+PASS 41  the copy's analytics start at 0 tickets and 0.00 KZT
+PASS 41b duplicating left the original's figures untouched (4 sold)
+PASS 42  the dashboard filters events by lifecycle (HTTP 200)
+PASS 42b the new draft appears under the draft filter
+PASS 43  the organizer reads their attendee list (HTTP 200)
+PASS 43b at least one order is marked refundable
+     refunding order: 9fc9c5d0-9d6c-4928-9ce7-78c703fcf110
+PASS 44  an anonymous caller cannot refund an order (HTTP 401)
+PASS 44b the ticket buyer cannot refund their own order (HTTP 403)
+PASS 45  the organizer refunds the order (HTTP 200)
+PASS 45b the order comes back refunded
+PASS 45c every live ticket on the order was voided (1)
+PASS 46  PostgreSQL: order and payment refunded, refund succeeded, 0 live tickets, 1 audit entry
+PASS 47  the gate refuses a refunded ticket (HTTP 409)
+PASS 47b the scanner is told the ticket is not valid
+PASS 48  a second refund on the same order is refused (HTTP 409)
+PASS 48b the refusal is an explicit already_refunded
+PASS 49  both notifications were sent: purchase confirmation and refund completion
+PASS 50  a reset is requested for a real account (HTTP 202)
+PASS 50b the same request for an unknown address (HTTP 202)
+PASS 50c both answers are identical, so the form cannot enumerate accounts
+PASS 51  the reset email carries a token
+PASS 51b the database stores a hash, not the token itself
+PASS 52  the token sets a new password (HTTP 200)
+PASS 52b the old password no longer works (HTTP 401)
+PASS 52c the new password does (HTTP 200)
+PASS 53  a reset code is good exactly once (HTTP 400)
+PASS 53b the refusal is an explicit token_invalid
+PASS 54  the account asks for a confirmation email (HTTP 202)
+PASS 54b the emailed code confirms the address (HTTP 200)
+PASS 54c PostgreSQL records the account as active and verified
+PASS 55  an organizer uploads an event banner
+     banner: http://localhost:8080/uploads/fb7127d583e74f5fa913e1f228231243.png
+PASS 55b a non-image is refused whatever the filename says
+PASS 56  the stored banner is served back, so the <img> resolves
+PASS 56b the event carries a banner and a refund policy (HTTP 200)
+PASS 56c the public page shows both
+PASS 57  staff search the attendee list by name (HTTP 200)
+PASS 57b the search finds an admissible ticket
+PASS 57c the results carry no QR token, so the search is not a skeleton key
+PASS 58  an attendee list is not public (HTTP 401)
+PASS 59  staff check somebody in without a QR code (HTTP 200)
+PASS 59b PostgreSQL records the admission and how it was made
+PASS 59c a second manual check-in is refused (HTTP 409)
+PASS 60  an ordinary account cannot reach the admin portal (HTTP 403)
+PASS 60a nor can an anonymous one (HTTP 401)
+PASS 60b a platform admin can (HTTP 200)
+PASS 60c searching an email finds that user (users/events/orders: 1/2/0)
+PASS 61  the operational report is served as CSV
+PASS 61b it downloads as an attachment
+PASS 61c the report parses as CSV and contains this event (found:3:19000.00)
+     cleaned up the smoke-test user and event
+-----------------------------------------------------------
+All acceptance checks passed.

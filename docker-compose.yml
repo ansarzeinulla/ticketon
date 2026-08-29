@@ -1,0 +1,118 @@
+# BiletFlow - Phase 1: local database foundation
+#
+#   docker compose up -d          start PostgreSQL (schema auto-applied on first boot)
+#   docker compose --profile tools up -d   also start pgAdmin on http://localhost:5050
+#
+name: biletflow
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: biletflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-biletflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-biletflow_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-biletflow}
+      # Deterministic, locale-independent sorting/comparison for tests.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - biletflow_pgdata:/var/lib/postgresql/data
+      # Scripts in this directory are executed alphabetically the FIRST time the
+      # volume is empty. Use `make reset` to force a re-run from scratch.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      # Mounted (not auto-run) so seed/test scripts can be executed on demand.
+      - ./db/seed:/opt/biletflow/seed:ro
+      - ./db/tests:/opt/biletflow/tests:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-biletflow} -d ${POSTGRES_DB:-biletflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  # SRS 8: "Docker-based local or demonstration deployment." The API and the
+  # dashboard live behind a profile so the default `docker compose up` stays
+  # the fast database-only loop the Makefile targets expect:
+  #
+  #   docker compose up -d                    just PostgreSQL (development)
+  #   docker compose --profile app up -d      the whole platform
+  api:
+    build:
+      context: ./api
+    container_name: biletflow-api
+    profiles: ["app"]
+    restart: unless-stopped
+    environment:
+      BILETFLOW_ENV: ${BILETFLOW_ENV:-development}
+      API_HOST: 0.0.0.0
+      API_PORT: 8080
+      # Inside the network the database is reachable by service name on its
+      # own port, not through the host mapping.
+      DATABASE_URL: postgres://${POSTGRES_USER:-biletflow}:${POSTGRES_PASSWORD:-biletflow_dev_password}@db:5432/${POSTGRES_DB:-biletflow}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-biletflow}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-24h}
+      BCRYPT_COST: ${BCRYPT_COST:-12}
+      # Links in notification emails and campaign QR codes point at the host,
+      # because that is where a person's browser is.
+      WEB_BASE_URL: ${WEB_BASE_URL:-http://localhost:3000}
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8080}
+      TZ: UTC
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - biletflow_uploads:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./web
+      args:
+        # Inlined into the client bundle at build time: the browser calls the
+        # API directly, from the host, so this is the host address.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080/api/v1}
+    container_name: biletflow-web
+    profiles: ["app"]
+    restart: unless-stopped
+    environment:
+      # Server Components render inside this container, where "localhost" is
+      # this container - not the API. They reach the API by service name.
+      # Deliberately not NEXT_PUBLIC_: a browser cannot resolve "api".
+      API_INTERNAL_BASE_URL: http://api:8080/api/v1
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: biletflow-pgadmin
+    profiles: ["tools"]
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@biletflow.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - biletflow_pgadmin:/var/lib/pgadmin
+
+volumes:
+  biletflow_pgdata:
+  biletflow_pgadmin:
+  # Event banners uploaded through the API. A named volume so a container
+  # rebuild does not take every public page's image with it.
+  biletflow_uploads:

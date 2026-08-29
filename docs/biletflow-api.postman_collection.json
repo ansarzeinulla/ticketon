@@ -1,0 +1,2038 @@
+{
+  "info": {
+    "name": "BiletFlow API (Phases 2-12)",
+    "description": "Authentication and event management for the BiletFlow platform.\n\nRun the requests in order: Register saves the access token into the {{token}} collection variable, so every later request is already authenticated. Create Event saves {{eventId}}.\n\nStart the stack first:  make up && make api-run",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "email",
+      "value": "postman.user@biletflow.test"
+    },
+    {
+      "key": "password",
+      "value": "correct horse battery"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "eventId",
+      "value": ""
+    },
+    {
+      "key": "ticketTypeId",
+      "value": ""
+    },
+    {
+      "key": "eventSlug",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "ticketId",
+      "value": ""
+    },
+    {
+      "key": "campaignId",
+      "value": ""
+    },
+    {
+      "key": "campaignToken",
+      "value": ""
+    },
+    {
+      "key": "caseId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Reports API and database status.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.access_token) {",
+                  "    pm.collectionVariables.set('token', body.access_token);",
+                  "    console.log('Saved access_token to the {{token}} variable.');",
+                  "}",
+                  "if (body.user && body.user.id) {",
+                  "    pm.collectionVariables.set('userId', body.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Criterion 1. Only email and password are required; full_name, phone and locale are optional. Returns 201 with the account and an access token.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Register (full profile)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "The same endpoint with every optional field supplied.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"dana@biletflow.test\",\n  \"password\": \"correct horse battery\",\n  \"full_name\": \"Dana Amirova\",\n  \"phone\": \"+7 701 111 11 11\",\n  \"locale\": \"ru\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.access_token) {",
+                  "    pm.collectionVariables.set('token', body.access_token);",
+                  "    console.log('Saved access_token to the {{token}} variable.');",
+                  "}",
+                  "if (body.user && body.user.id) {",
+                  "    pm.collectionVariables.set('userId', body.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Criterion 2. Returns a 24-hour bearer token, saved to {{token}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Proves the token works. Returns the account and its roles."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Events",
+      "item": [
+        {
+          "name": "Create event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.event && body.event.id) {",
+                  "    pm.collectionVariables.set('eventId', body.event.id);",
+                  "    console.log('Saved event id ' + body.event.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events"
+              ]
+            },
+            "description": "Criterion 3. Returns 201 Created with a Location header. The event starts as a draft and the caller gains the organizer role.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Almaty Winter Jazz Night\",\n  \"description\": \"An evening of live jazz.\",\n  \"category\": \"music\",\n  \"venue_name\": \"Almaty Demo Hall\",\n  \"venue_address\": \"Abay Avenue 44, Almaty\",\n  \"starts_at\": \"2026-12-20T19:00:00+05:00\",\n  \"ends_at\": \"2026-12-20T22:00:00+05:00\",\n  \"timezone\": \"Asia/Almaty\",\n  \"visibility\": \"public\",\n  \"seating_mode\": \"general_admission\",\n  \"capacity\": 250,\n  \"refund_policy\": \"Full refunds up to 7 days before the event.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List public events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events?limit=20&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Published, publicly visible events. Also accepts category, q, starts_after and starts_before.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "List my events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "mine"
+              ]
+            },
+            "description": "Every event this organizer owns, drafts included."
+          }
+        },
+        {
+          "name": "Get event",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}"
+              ]
+            },
+            "description": "Drafts and private events are visible only to their organizer.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Update event",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}"
+              ]
+            },
+            "description": "Only the fields you send change. Send null to clear a field.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Almaty Winter Jazz Night 2026\",\n  \"capacity\": 300\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Publish event",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "publish"
+              ]
+            },
+            "description": "Draft or unpublished -> published."
+          }
+        },
+        {
+          "name": "Unpublish event",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/unpublish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "unpublish"
+              ]
+            },
+            "description": "Hides a published event without cancelling it."
+          }
+        },
+        {
+          "name": "Cancel event",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "cancel"
+              ]
+            },
+            "description": "Marks the event cancelled and records the timestamp."
+          }
+        },
+        {
+          "name": "Event timeline",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/timeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "timeline"
+              ]
+            },
+            "description": "The append-only activity log for this event."
+          }
+        },
+        {
+          "name": "Delete event",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}"
+              ]
+            },
+            "description": "Drafts without orders only. Anything else must be cancelled."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Ticket types (organizer)",
+      "item": [
+        {
+          "name": "Create ticket type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.ticket_type) {",
+                  "    pm.collectionVariables.set('ticketTypeId', body.ticket_type.id);",
+                  "    pm.collectionVariables.set('eventSlug', pm.collectionVariables.get('eventSlug'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/ticket-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "ticket-types"
+              ]
+            },
+            "description": "Price is a decimal STRING so numeric(14,2) is never rounded by a float. A price of 0 makes the ticket free.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"General Admission\",\n  \"description\": \"Standing room\",\n  \"price_kzt\": \"5000\",\n  \"quantity_total\": 5,\n  \"max_per_order\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List ticket types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/ticket-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "ticket-types"
+              ]
+            },
+            "description": "The organizer's view: includes hidden types and live sold/remaining counts."
+          }
+        },
+        {
+          "name": "Update ticket type",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ticket-types/{{ticketTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ticket-types",
+                "{{ticketTypeId}}"
+              ]
+            },
+            "description": "Partial update. Lowering quantity_total below what is already sold is refused.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price_kzt\": \"6000\",\n  \"quantity_total\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Hide ticket type",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ticket-types/{{ticketTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ticket-types",
+                "{{ticketTypeId}}"
+              ]
+            },
+            "description": "Withdraws it from sale without deleting the sales history (SRS 4.3).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_hidden\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete ticket type",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ticket-types/{{ticketTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ticket-types",
+                "{{ticketTypeId}}"
+              ]
+            },
+            "description": "Only while nothing has been sold; otherwise hide it instead."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Attendee checkout",
+      "item": [
+        {
+          "name": "Public event page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/events/{{eventSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "public",
+                "events",
+                "{{eventSlug}}"
+              ]
+            },
+            "description": "No token needed. Returns the event, its visible ticket types with quantity_remaining, and on_sale / sold_out flags. Drafts and private events are 404 here.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Checkout (simulated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.order) {",
+                  "    pm.collectionVariables.set('orderId', body.order.id);",
+                  "    pm.test('order is paid', () => pm.expect(body.order.status).to.eql('paid'));",
+                  "}",
+                  "if (body.tickets && body.tickets.length) {",
+                  "    pm.collectionVariables.set('ticketId', body.tickets[0].id);",
+                  "    pm.test('token is TKT_<uuid>', () =>",
+                  "        pm.expect(body.tickets[0].qr_token).to.match(",
+                  "            /^TKT_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "checkout"
+              ]
+            },
+            "description": "Atomically takes inventory, records a paid order with is_simulated payment, and issues one ticket per seat bought. Guests may buy; send a bearer token to link the order to an account. Returns 409 with code insufficient_inventory when stock cannot cover the request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyer_name\": \"Nurlan Amanov\",\n  \"buyer_email\": \"nurlan@example.kz\",\n  \"items\": [\n    {\n      \"ticket_type_id\": \"{{ticketTypeId}}\",\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Order confirmation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{orderId}}"
+              ]
+            },
+            "description": "The order with its items and issued tickets. The UUID is the unguessable capability that makes a guest confirmation link work.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Ticket delivery",
+      "item": [
+        {
+          "name": "Ticket details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tickets",
+                "{{ticketId}}"
+              ]
+            },
+            "description": "The ticket with its admission token and the pdf_url / qr_url links.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Download A4 PDF ticket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tickets",
+                "{{ticketId}}",
+                "pdf"
+              ]
+            },
+            "description": "A print-ready A4 PDF: event, local date/time, venue, attendee, ticket id and a high-contrast QR. Sent as Content-Disposition: attachment. In Postman use 'Send and Download' to save the file.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Ticket QR (PNG)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/qr.png",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tickets",
+                "{{ticketId}}",
+                "qr.png"
+              ]
+            },
+            "description": "Just the admission QR, for embedding a preview. Encodes the same TKT_<uuid> string the PDF does.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Promo codes & campaigns",
+      "item": [
+        {
+          "name": "Create campaign",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.campaign) {",
+                  "    pm.collectionVariables.set('campaignId', body.campaign.id);",
+                  "    pm.collectionVariables.set('campaignToken', body.campaign.qr_token);",
+                  "    pm.test('token is CMP_<uuid>', () =>",
+                  "        pm.expect(body.campaign.qr_token).to.match(",
+                  "            /^CMP_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/campaigns",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "campaigns"
+              ]
+            },
+            "description": "Creates a promo code and its campaign QR token. discount_type is 'percentage' or 'fixed_amount'; discount_value is a decimal STRING. Omit max_redemptions for unlimited. Optional ticket_type_ids restrict which tickets it covers.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Spring Promotion\",\n  \"code\": \"SPRING20\",\n  \"discount_type\": \"percentage\",\n  \"discount_value\": \"20\",\n  \"max_redemptions\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List campaigns",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/campaigns",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "campaigns"
+              ]
+            },
+            "description": "Campaigns with their attributed orders, tickets sold, gross revenue and discount given (SRS 4.14)."
+          }
+        },
+        {
+          "name": "Campaign QR image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/campaigns/{{campaignId}}/qr.png",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "campaigns",
+                "{{campaignId}}",
+                "qr.png"
+              ]
+            },
+            "description": "The PNG for a poster. Public: an <img> cannot send a bearer header and the code is meant to be published. Encodes the trackable event link, never the discount value.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Preview a promo code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/promo/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "promo",
+                "preview"
+              ]
+            },
+            "description": "Prices the code against a basket. Send `campaign_token` instead of `code` for a scanned QR. A preview only - nothing is reserved and no counter moves.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SPRING20\",\n  \"items\": [\n    {\n      \"ticket_type_id\": \"{{ticketTypeId}}\",\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Checkout with a promo code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "checkout"
+              ]
+            },
+            "description": "Redeems the code inside the checkout transaction. Send `campaign_token` instead when the attendee arrived via a QR. Returns 409 promo_exhausted when the limit was taken since the preview.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyer_name\": \"Aisha Nurlanova\",\n  \"buyer_email\": \"aisha@example.kz\",\n  \"promo_code\": \"SPRING20\",\n  \"items\": [\n    {\n      \"ticket_type_id\": \"{{ticketTypeId}}\",\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Disable campaign",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/campaigns/{{campaignId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "campaigns",
+                "{{campaignId}}"
+              ]
+            },
+            "description": "Withdraws the code without losing its sales history.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Gate refuses a campaign QR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/check-in",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "check-in"
+              ]
+            },
+            "description": "SRS 4.14: a promotional code is never admission. Returns 400 with code campaign_token - for the bare token and for the full campaign link alike.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qr_token\": \"{{campaignToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Support chat",
+      "item": [
+        {
+          "name": "Issue categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/support/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "support",
+                "categories"
+              ]
+            },
+            "description": "The categories an attendee picks from. Served by the API so the UI cannot drift from the support_case_category enum.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Open a case",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body.case) pm.collectionVariables.set('caseId', body.case.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/support/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "support",
+                "cases"
+              ]
+            },
+            "description": "Requires the attendee's own token: the order must belong to them, matched by account id or by the email it was bought under. The order's event is attached automatically.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"event_information\",\n  \"subject\": \"Parking\",\n  \"message\": \"Where is parking?\",\n  \"order_id\": \"{{orderId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "My cases",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/support/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "support",
+                "cases"
+              ]
+            },
+            "description": "Every case this account opened."
+          }
+        },
+        {
+          "name": "Organizer inbox",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/support/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "support",
+                "cases"
+              ]
+            },
+            "description": "Cases attached to one event. Organizer only."
+          }
+        },
+        {
+          "name": "Read a thread",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/support/cases/{{caseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "support",
+                "cases",
+                "{{caseId}}"
+              ]
+            },
+            "description": "Visible to the requester, the event's organizer and platform admins; anyone else gets 404, not 403. Internal notes are stripped for the requester. Poll this to refresh a conversation."
+          }
+        },
+        {
+          "name": "Reply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/support/cases/{{caseId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "support",
+                "cases",
+                "{{caseId}}",
+                "messages"
+              ]
+            },
+            "description": "Both sides post here. An organizer's first reply moves an Open case to In Progress. Add \"internal_note\": true for a staff-only note.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Parking is in Zone B\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Set status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/support/cases/{{caseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "support",
+                "cases",
+                "{{caseId}}"
+              ]
+            },
+            "description": "open | in_progress | waiting_for_customer | resolved. Organizer only - a requester cannot declare their own case answered.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"resolved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Platform moderation",
+      "item": [
+        {
+          "name": "Suspend an event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/events/{{eventId}}/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events",
+                "{{eventId}}",
+                "suspend"
+              ]
+            },
+            "description": "Requires the platform_admin role, which has no self-service route: grant it with\\n\\n  INSERT INTO user_roles (user_id, role)\\n  SELECT id, 'platform_admin' FROM users WHERE email = '...';\\n\\nSales stop immediately; tickets already sold stay valid and their holders can still be checked in.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Reported for a misleading description\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Checkout is blocked",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "checkout"
+              ]
+            },
+            "description": "Returns 403 with code event_suspended. Checked before any inventory is touched, so no order or ticket is created.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyer_name\": \"Blocked Buyer\",\n  \"buyer_email\": \"blocked@example.kz\",\n  \"items\": [\n    {\n      \"ticket_type_id\": \"{{ticketTypeId}}\",\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Lift the suspension",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/events/{{eventId}}/unsuspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events",
+                "{{eventId}}",
+                "unsuspend"
+              ]
+            },
+            "description": "Returns the event to unpublished, so the organizer must consciously publish it again."
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Analytics, history & duplication",
+      "description": "Phase 9: what an event actually did, and reusing one that worked.",
+      "item": [
+        {
+          "name": "Event analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/analytics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "analytics"
+              ]
+            },
+            "description": "Tickets sold, KZT revenue, discounts, orders and check-ins for the event, broken down by ticket type and campaign, with a sales-over-time series. Every figure is computed from the rows at request time."
+          }
+        },
+        {
+          "name": "Event analytics (filtered)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/analytics?from=2026-01-01&to=2026-12-31&ticket_type_id={{ticketTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "ticket_type_id",
+                  "value": "{{ticketTypeId}}"
+                }
+              ]
+            },
+            "description": "The same figures narrowed to a date range and one ticket tier. Dates accept 2006-01-02 or a full RFC 3339 timestamp; a plain `to` date means the end of that day."
+          }
+        },
+        {
+          "name": "Event history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/timeline?type=order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "timeline"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "order"
+                }
+              ]
+            },
+            "description": "The event's append-only audit trail, newest first. `type` narrows to event / ticket / order / campaign / support entries."
+          }
+        },
+        {
+          "name": "Duplicate event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/duplicate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "duplicate"
+              ]
+            },
+            "description": "Copies the configuration and the ticket types into a new DRAFT with no orders, no tickets and no check-ins. Send an empty body to accept the defaults, or override any field.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Almaty Autumn Fest 2027\",\n  \"starts_at\": \"2027-08-17T18:00:00Z\",\n  \"ends_at\": \"2027-08-17T23:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List my events by lifecycle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/mine?lifecycle=draft",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "mine"
+              ],
+              "query": [
+                {
+                  "key": "lifecycle",
+                  "value": "draft"
+                }
+              ]
+            },
+            "description": "The organizer's history grouped the way the dashboard shows it. `lifecycle` is one of upcoming, active, completed, cancelled, draft, suspended — derived from the dates and status, never stored."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Refunds & paid-sales activation",
+      "description": "Phase 10: SRS 4.5, 4.9 and 4.10.",
+      "item": [
+        {
+          "name": "Paid-sales activation state",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/activation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "activation"
+              ]
+            },
+            "description": "The checklist for this event: which steps are done, which are outstanding, the activation fee, and whether activation gates anything here at all (a free event needs none)."
+          }
+        },
+        {
+          "name": "Complete the activation checklist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/activation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "activation"
+              ]
+            },
+            "description": "Completes one or more steps. Paid sales open automatically once all four are done. Sending all four at once is the usual case; sending a subset saves progress without activating. Re-submitting is safe - the fee is only ever paid once.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm_identity\": true,\n  \"confirm_payout\": true,\n  \"accept_terms\": true,\n  \"pay_activation_fee\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Orders for an event",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "orders"
+              ]
+            },
+            "description": "The organizer's attendee view: buyer, order number, tickets still live, how many were checked in, and whether the order can be refunded."
+          }
+        },
+        {
+          "name": "Refund an order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/refund",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{orderId}}",
+                "refund"
+              ]
+            },
+            "description": "Full refund, organizer only. Reverses the order and its payment, voids every issued ticket, returns the inventory, writes an audit entry, and emails the attendee. The voided tickets stop scanning immediately. A second attempt returns 409 already_refunded.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Attendee could not travel\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Suspend paid sales (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/events/{{eventId}}/paid-sales/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events",
+                "{{eventId}}",
+                "paid-sales",
+                "suspend"
+              ]
+            },
+            "description": "Platform admins only (SRS 4.5). Stops the event taking money while leaving free registration working - narrower than suspending the event outright. The organizer cannot lift it.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Chargeback pattern under review\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Restore paid sales (admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/events/{{eventId}}/paid-sales/unsuspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events",
+                "{{eventId}}",
+                "paid-sales",
+                "unsuspend"
+              ]
+            },
+            "description": "Lifts the suspension, re-checking the whole checklist rather than trusting the old status."
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Account recovery, admin portal & uploads",
+      "description": "Phase 12: SRS 2.1, 4.1, 4.2, 4.8, 4.12.",
+      "item": [
+        {
+          "name": "Request a password reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password-reset/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "password-reset",
+                "request"
+              ]
+            },
+            "description": "Emails a single-use token, printed to the API console in this MVP. Answers 202 with the same body whether or not the address has an account, so the form cannot be used to work out who is registered.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reset the password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password-reset",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "password-reset"
+              ]
+            },
+            "description": "Consumes the token and sets a new password. Good exactly once, expires after an hour, and invalidates every other outstanding token for the account. Returns no session: sign in afterwards.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"paste-the-token-from-the-console\",\n  \"password\": \"a brand new passphrase\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Request an email confirmation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/verify-email/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "verify-email",
+                "request"
+              ]
+            },
+            "description": "Re-sends the confirmation for the signed-in account."
+          }
+        },
+        {
+          "name": "Confirm an email address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "verify-email"
+              ]
+            },
+            "description": "Consumes a verification token. Needs no session - the link is followed from an inbox where nobody is signed in. Moves a pending_verification account to active.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"paste-the-token-from-the-console\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Search attendees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/attendees?q=nurlan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "attendees"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "nurlan"
+                }
+              ]
+            },
+            "description": "Manual door lookup by name, email, ticket code or order number (SRS 4.8). Authorised like scanning. Deliberately returns no QR token: check-in goes by ticket id instead."
+          }
+        },
+        {
+          "name": "Check in manually",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/check-in/manual",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "check-in",
+                "manual"
+              ]
+            },
+            "description": "Admits a ticket found by search rather than by camera. Runs the same transaction as a scan, so a second attempt is refused with 409 already_checked_in exactly as a re-scan would be.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticket_id\": \"{{ticketId}}\",\n  \"device_label\": \"Gate A\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Upload an event banner",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/uploads/images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "uploads",
+                "images"
+              ]
+            },
+            "description": "multipart/form-data with a field named \"file\". JPEG, PNG, GIF or WebP up to 5 MB; the type is sniffed from the content, not the filename. Returns the URL to put in the event's cover_image_url. In Postman: Body -> form-data -> key \"file\", type File."
+          }
+        },
+        {
+          "name": "Admin search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/search?q={{email}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{email}}"
+                }
+              ]
+            },
+            "description": "Platform admins only. One term across users, events, orders and payments, plus the platform counters the portal header shows. An empty q returns the most recent rows of each kind."
+          }
+        },
+        {
+          "name": "Export the operational report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/reports/events.csv",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "reports",
+                "events.csv"
+              ]
+            },
+            "description": "Platform admins only. One CSV row per event: status, lifecycle, organizer, capacity, tickets sold, checked in, orders, gross, discounts, refunds, net and activation state (SRS 4.12)."
+          }
+        }
+      ]
+    }
+  ]
+}
