@@ -3,6 +3,8 @@ package api
 import (
 	"errors"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
@@ -71,13 +73,13 @@ func (s *Server) handleOpenCase(w http.ResponseWriter, r *http.Request) {
 	}
 	if blank(req.Subject) {
 		errs.add("subject", "A short subject is required.")
-	} else if len(req.Subject) > maxSubjectLength {
-		errs.add("subject", "Subject must not exceed 200 characters.")
+	} else if msg := validateLine("Subject", req.Subject, 1, maxSubjectLength); msg != "" {
+		errs.add("subject", msg)
 	}
 	if blank(req.Message) {
 		errs.add("message", "Describe the problem so the organizer can help.")
-	} else if len(req.Message) > maxMessageLength {
-		errs.add("message", "Message is too long.")
+	} else if msg := validateMultiline("Message", req.Message, 1, maxMessageLength); msg != "" {
+		errs.add("message", msg)
 	}
 
 	params := store.OpenCaseParams{
@@ -212,6 +214,22 @@ func (s *Server) handleGetCase(w http.ResponseWriter, r *http.Request) {
 type postMessageRequest struct {
 	Message  string `json:"message"`
 	Internal bool   `json:"internal_note"`
+	// Attachment is a file already uploaded through POST /uploads (bonus,
+	// SRS 4.13). The client sends back what that endpoint returned.
+	Attachment *attachmentRequest `json:"attachment"`
+}
+
+// attachmentRequest is a file the client uploaded before posting.
+//
+// Two steps rather than one multipart message: the upload endpoint already
+// exists, already checks the type and size, and already returns a URL. Making
+// the chat endpoint a second uploader would duplicate all of that, and would
+// mean a large file is re-sent whenever the message text fails validation.
+type attachmentRequest struct {
+	URL      string `json:"url"`
+	Filename string `json:"filename"`
+	MimeType string `json:"mime_type"`
+	Bytes    int64  `json:"bytes"`
 }
 
 func (s *Server) handlePostCaseMessage(w http.ResponseWriter, r *http.Request) {
@@ -230,16 +248,21 @@ func (s *Server) handlePostCaseMessage(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteValidationError(w, fieldErrors{"message": "Write a message first."})
 		return
 	}
-	if len(req.Message) > maxMessageLength {
-		httpx.WriteValidationError(w, fieldErrors{"message": "Message is too long."})
+	if msg := validateMultiline("Message", req.Message, 1, maxMessageLength); msg != "" {
+		httpx.WriteValidationError(w, fieldErrors{"message": msg})
 		return
 	}
 
 	// Only staff can leave a note the requester will never see.
 	internal := req.Internal && access.staff
 
+	attachment, ok := s.validateAttachment(w, req.Attachment)
+	if !ok {
+		return
+	}
+
 	if _, err := s.support.PostMessage(r.Context(), supportCase.ID,
-		mustUserID(r.Context()), req.Message, internal, access.staff); err != nil {
+		mustUserID(r.Context()), req.Message, internal, access.staff, attachment); err != nil {
 		httpx.WriteInternalError(w, r, err)
 		return
 	}
@@ -481,4 +504,57 @@ func (s *Server) handleAssignCase(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, caseResponse{
 		Case: updated, Messages: messages, CanReply: true, CanModerate: true,
 	})
+}
+
+// validateAttachment checks that a claimed attachment is one this server
+// actually stored.
+//
+// The client sends back the URL the upload endpoint gave it, and a client can
+// send anything - so the URL is required to be one of ours before it is
+// written to a message. Otherwise a support thread would be a way to make
+// BiletFlow render a link to any address somebody chose, which is a phishing
+// vector with the platform's name on it.
+func (s *Server) validateAttachment(
+	w http.ResponseWriter, req *attachmentRequest,
+) (*store.MessageAttachment, bool) {
+	if req == nil || req.URL == "" {
+		return nil, true
+	}
+
+	prefix := s.cfg.APIBaseURL + uploadURLPrefix
+	name := strings.TrimPrefix(req.URL, prefix)
+
+	if name == req.URL || name == "" || strings.ContainsAny(name, `/\`) {
+		httpx.WriteValidationError(w, fieldErrors{
+			"attachment": "Attach a file by uploading it first.",
+		})
+		return nil, false
+	}
+
+	// And it has to exist: a URL for a file that was never stored would be a
+	// broken paperclip in the thread.
+	if _, err := os.Stat(filepath.Join(s.cfg.UploadDir, name)); err != nil {
+		httpx.WriteValidationError(w, fieldErrors{
+			"attachment": "That upload could not be found. Try attaching it again.",
+		})
+		return nil, false
+	}
+
+	if req.Bytes <= 0 {
+		httpx.WriteValidationError(w, fieldErrors{"attachment": "That file is empty."})
+		return nil, false
+	}
+
+	filename := req.Filename
+	if filename == "" {
+		filename = name
+	}
+	mime := req.MimeType
+	if mime == "" {
+		mime = "application/octet-stream"
+	}
+
+	return &store.MessageAttachment{
+		URL: req.URL, Filename: filename, MimeType: mime, Bytes: req.Bytes,
+	}, true
 }

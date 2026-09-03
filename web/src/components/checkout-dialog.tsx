@@ -7,6 +7,8 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/field";
 import { ApiError, api } from "@/lib/api";
+import { toAnalyticsValue, trackPurchase } from "@/lib/analytics";
+import { useT } from "@/lib/i18n/context";
 import { formatKZT, formatTiyn, lineTotal, toTiyn } from "@/lib/money";
 import type { PromoPreview, TicketType } from "@/lib/types";
 
@@ -23,6 +25,7 @@ interface Line {
  */
 export function CheckoutDialog({
   eventID,
+  eventSlug,
   eventTitle,
   lines,
   totalTiyn,
@@ -33,6 +36,8 @@ export function CheckoutDialog({
   onPromoRejected,
 }: {
   eventID: string;
+  /** Analytics label only - a slug identifies an event, not a person. */
+  eventSlug: string;
   eventTitle: string;
   lines: Line[];
   totalTiyn: number;
@@ -44,6 +49,7 @@ export function CheckoutDialog({
   onPromoRejected: () => void;
 }) {
   const router = useRouter();
+  const t = useT();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   const [name, setName] = useState("");
@@ -69,8 +75,8 @@ export function CheckoutDialog({
     setFieldErrors({});
 
     const errors: Record<string, string> = {};
-    if (!name.trim()) errors.buyer_name = "Your name is required.";
-    if (!email.trim()) errors.buyer_email = "Your email is required.";
+    if (!name.trim()) errors.buyer_name = t("checkout.nameRequired");
+    if (!email.trim()) errors.buyer_email = t("checkout.emailRequired");
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -90,6 +96,15 @@ export function CheckoutDialog({
         ...(promo ? { promo_code: promo.code } : campaignToken ? { campaign_token: campaignToken } : {}),
       });
 
+      // The completed purchase (bonus). No order id and no buyer - a value,
+      // a count, and whether a discount was involved.
+      trackPurchase({
+        slug: eventSlug,
+        valueKZT: toAnalyticsValue(result.order.total_kzt),
+        tickets: result.tickets.length,
+        discounted: toAnalyticsValue(result.order.discount_kzt) > 0,
+      });
+
       // The confirmation lives at its own URL, so it survives a refresh and can
       // be shared or bookmarked.
       router.push(`/orders/${result.order.id}`);
@@ -99,26 +114,26 @@ export function CheckoutDialog({
         // paying. Drop it so the attendee sees the real price rather than a
         // total we can no longer honour.
         onPromoRejected();
-        setFormError(error.message + " The price has been updated.");
+        setFormError(error.message + t("checkout.priceUpdated"));
         setSubmitting(false);
         return;
       }
       if (error instanceof ApiError && error.isSoldOut) {
         setFormError(
           error.remaining === 0
-            ? "These tickets sold out while you were choosing. The page has been refreshed."
-            : `${error.message} The page has been refreshed with what is left.`,
+            ? t("checkout.soldOutDuring")
+            : t("checkout.soldOutPartial", { message: error.message }),
         );
         onSoldOut();
       } else if (error instanceof ApiError) {
         setFieldErrors(error.fields);
         setFormError(
           Object.keys(error.fields).length > 0
-            ? "Please correct the highlighted fields."
+            ? t("checkout.correctFields")
             : error.message,
         );
       } else {
-        setFormError("The payment simulation failed. Please try again.");
+        setFormError(t("checkout.failed"));
       }
       setSubmitting(false);
     }
@@ -135,7 +150,7 @@ export function CheckoutDialog({
       <div className="space-y-5 p-6">
         <div>
           <h2 id="checkout-title" className="text-lg font-semibold tracking-tight">
-            Checkout
+            {t("checkout.title")}
           </h2>
           <p className="mt-1 text-sm text-foreground-muted">{eventTitle}</p>
         </div>
@@ -157,7 +172,7 @@ export function CheckoutDialog({
           {promo && (
             <li className="flex items-center justify-between gap-4 px-4 py-3">
               <p className="truncate text-sm font-medium text-success">
-                Promo {promo.code}
+                {t("checkout.promo", { code: promo.code })}
               </p>
               <p className="shrink-0 text-sm font-medium tabular-nums text-success">
                 −{formatKZT(promo.discount_kzt)}
@@ -165,7 +180,7 @@ export function CheckoutDialog({
             </li>
           )}
           <li className="flex items-center justify-between gap-4 bg-surface-muted/50 px-4 py-3">
-            <p className="text-sm font-semibold">Total</p>
+            <p className="text-sm font-semibold">{t("checkout.total")}</p>
             <p className="text-base font-semibold tabular-nums">{formatTiyn(payableTiyn)}</p>
           </li>
         </ul>
@@ -174,10 +189,10 @@ export function CheckoutDialog({
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <TextField
-            label="Full name"
+            label={t("checkout.nameLabel")}
             name="buyer_name"
             autoComplete="name"
-            placeholder="Nurlan Amanov"
+            placeholder={t("checkout.namePlaceholder")}
             required
             value={name}
             error={fieldErrors.buyer_name}
@@ -185,12 +200,12 @@ export function CheckoutDialog({
             onChange={(event) => setName(event.target.value)}
           />
           <TextField
-            label="Email"
+            label={t("checkout.emailLabel")}
             type="email"
             name="buyer_email"
             autoComplete="email"
-            placeholder="nurlan@example.kz"
-            hint="Your tickets are issued to this address."
+            placeholder={t("checkout.emailPlaceholder")}
+            hint={t("checkout.emailHint")}
             required
             value={email}
             error={fieldErrors.buyer_email}
@@ -200,13 +215,14 @@ export function CheckoutDialog({
 
           {/* SRS 4.6: a demonstration payment must never look like a real one. */}
           <p className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
-            Simulated payment — no card is charged and no money moves. This is a
-            demonstration checkout.
+            {t("checkout.simulatedNote")}
           </p>
 
           <div className="flex flex-wrap gap-3">
             <Button type="submit" loading={submitting} className="flex-1">
-              {submitting ? "Processing…" : `Pay ${formatTiyn(payableTiyn)} (simulated)`}
+              {submitting
+                ? t("checkout.processing")
+                : t("checkout.pay", { amount: formatTiyn(payableTiyn) })}
             </Button>
             <Button
               type="button"
@@ -214,7 +230,7 @@ export function CheckoutDialog({
               disabled={submitting}
               onClick={() => dialogRef.current?.close()}
             >
-              Cancel
+              {t("checkout.cancel")}
             </Button>
           </div>
         </form>

@@ -15,6 +15,8 @@
 #            the event and confirm the copy is an empty draft
 #   Phase 10: paid sales are refused until the activation checklist is done;
 #            an organizer refunds an order and the tickets stop scanning
+#   Phase 13: a basket reserves stock without selling it, expires on its own,
+#            and is charged a processing fee; an event exports as .ics
 #   Phase 12: a password is reset from an emailed token, an image is uploaded
 #            and shown publicly, an attendee is found by name and checked in
 #            without a QR, and an admin searches and exports a CSV report
@@ -90,7 +92,7 @@ expect_status() {
     return 1
 }
 
-printf '%s\n' "${BOLD}BiletFlow API acceptance checks (Phases 2-12)${OFF}  ->  $API_URL"
+printf '%s\n' "${BOLD}BiletFlow API acceptance checks (Phases 2-13)${OFF}  ->  $API_URL"
 printf '%s\n' "-----------------------------------------------------------"
 
 # --- the API must be up ------------------------------------------------------
@@ -325,11 +327,11 @@ ORDER_ID="$(json_get "$HTTP_BODY" order.id)"
 ORDER_STATUS="$(json_get "$HTTP_BODY" order.status)"
 ORDER_TOTAL="$(json_get "$HTTP_BODY" order.total_kzt)"
 
-if [ "$ORDER_STATUS" = "paid" ] && [ "$ORDER_TOTAL" = "10000.00" ]; then
-    pass "10b the order is paid for 10000.00 KZT"
+if [ "$ORDER_STATUS" = "paid" ] && [ "$ORDER_TOTAL" = "10350.00" ]; then
+    pass "10b the order is paid for 10350.00 KZT (10000 + the 3.5% processing charge)"
     info "order id: $ORDER_ID"
 else
-    fail "10b order is ${ORDER_STATUS:-none} for ${ORDER_TOTAL:-none}, want paid / 10000.00"
+    fail "10b order is ${ORDER_STATUS:-none} for ${ORDER_TOTAL:-none}, want paid / 10350.00"
 fi
 
 # The inventory is checked outside the API, straight from PostgreSQL.
@@ -362,6 +364,134 @@ fi
 
 request GET /api/v1/orders/"$ORDER_ID" - -
 expect_status 200 "13  the order confirmation is retrievable by id"
+
+# --- Cart holds, fees and calendar export (SRS 4.6, 3.3, 4.11) ---------------
+
+# The event still has stock at this point in the run.
+request POST /api/v1/events/"$EVENT_ID"/holds - \
+    "{\"items\":[{\"ticket_type_id\":\"${TICKET_TYPE_ID}\",\"quantity\":1}]}"
+expect_status 201 "62  an attendee reserves a ticket without buying it"
+
+HOLD_ORDER="$(json_get "$HTTP_BODY" hold.order_id)"
+HOLD_FEE="$(json_get "$HTTP_BODY" hold.estimated_processing_fee_kzt)"
+HOLD_TOTAL="$(json_get "$HTTP_BODY" hold.estimated_total_kzt)"
+
+if [ "$HOLD_FEE" = "175.00" ] && [ "$HOLD_TOTAL" = "5175.00" ]; then
+    pass "62b the basket is quoted 5000 plus the 3.5 percent charge"
+else
+    fail "62b quote is ${HOLD_FEE:-none} / ${HOLD_TOTAL:-none}, want 175.00 / 5175.00"
+fi
+
+RESERVED_ROW="$(docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME" -tAX -c \
+    "SELECT (SELECT quantity_reserved FROM ticket_types WHERE id = '${TICKET_TYPE_ID}')
+         || '/' || (SELECT status FROM orders WHERE id = '${HOLD_ORDER}')
+         || '/' || (SELECT (reserved_until IS NOT NULL)::text FROM orders WHERE id = '${HOLD_ORDER}');" \
+    2>&1 | tr -d '\r\n ')"
+if [ "$RESERVED_ROW" = "1/pending/true" ]; then
+    pass "63  PostgreSQL reserved the ticket without selling it"
+else
+    fail "63  the reservation reads ${RESERVED_ROW:-nothing}, want 1/pending/true"
+fi
+
+request GET /api/v1/orders/"$HOLD_ORDER"/hold - -
+expect_status 200 "63b a reloaded page can read its basket back"
+
+request DELETE /api/v1/orders/"$HOLD_ORDER"/hold - -
+expect_status 200 "64  releasing the basket puts the ticket back"
+
+RELEASED="$(docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME" -tAX -c \
+    "SELECT quantity_reserved FROM ticket_types WHERE id = '${TICKET_TYPE_ID}';" \
+    2>&1 | tr -d '\r\n ')"
+if [ "$RELEASED" = "0" ]; then
+    pass "64b quantity_reserved is back to zero"
+else
+    fail "64b quantity_reserved is ${RELEASED:-nothing} after releasing, want 0"
+fi
+
+# An abandoned basket expires on its own (SRS 4.6). The clock is moved rather
+# than waited on: a check that sleeps fifteen minutes is a check nobody runs.
+request POST /api/v1/events/"$EVENT_ID"/holds - \
+    "{\"items\":[{\"ticket_type_id\":\"${TICKET_TYPE_ID}\",\"quantity\":1}]}"
+expect_status 201 "65  a second basket is reserved, then abandoned"
+ABANDONED="$(json_get "$HTTP_BODY" hold.order_id)"
+
+docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME" -qtAX -c \
+    "UPDATE orders SET reserved_until = now() - interval '1 minute'
+      WHERE id = '${ABANDONED}';" >/dev/null 2>&1
+
+request POST /api/v1/orders/"$ABANDONED"/confirm - \
+    "{\"buyer_name\":\"Too Late\",\"buyer_email\":\"late.${STAMP}@biletflow.test\"}"
+expect_status 409 "65b confirming an expired basket is refused"
+if [ "$(json_get "$HTTP_BODY" error.code)" = "hold_expired" ]; then
+    pass "65c the refusal says the reservation expired"
+else
+    fail "65c refusal code is $(json_get "$HTTP_BODY" error.code), want hold_expired"
+fi
+
+EXPIRED_ROW="$(docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME" -tAX -c \
+    "SELECT (SELECT status FROM orders WHERE id = '${ABANDONED}')
+         || '/' || (SELECT quantity_reserved FROM ticket_types WHERE id = '${TICKET_TYPE_ID}');" \
+    2>&1 | tr -d '\r\n ')"
+if [ "$EXPIRED_ROW" = "expired/0" ]; then
+    pass "66  the abandoned basket expired and its ticket went back on sale"
+else
+    fail "66  the abandoned basket reads ${EXPIRED_ROW:-nothing}, want expired/0"
+fi
+
+# A basket that is paid for becomes a sale, not an addition to one.
+request POST /api/v1/events/"$EVENT_ID"/holds - \
+    "{\"items\":[{\"ticket_type_id\":\"${TICKET_TYPE_ID}\",\"quantity\":1}]}"
+expect_status 201 "67  a third basket is reserved"
+PAID_HOLD="$(json_get "$HTTP_BODY" hold.order_id)"
+
+request POST /api/v1/orders/"$PAID_HOLD"/confirm - \
+    "{\"buyer_name\":\"Two Step Buyer\",\"buyer_email\":\"twostep.${STAMP}@biletflow.test\"}"
+expect_status 200 "67b the basket is paid for and the tickets issued"
+
+CONVERTED="$(docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME" -tAX -c \
+    "SELECT (SELECT quantity_reserved FROM ticket_types WHERE id = '${TICKET_TYPE_ID}')
+         || '/' || (SELECT status FROM orders WHERE id = '${PAID_HOLD}')
+         || '/' || (SELECT count(*) FROM tickets WHERE order_id = '${PAID_HOLD}');" \
+    2>&1 | tr -d '\r\n ')"
+if [ "$CONVERTED" = "0/paid/1" ]; then
+    pass "68  the reservation became a sale: 0 reserved, order paid, 1 ticket"
+else
+    fail "68  after confirming, the rows read ${CONVERTED:-nothing}, want 0/paid/1"
+fi
+
+FEE_ROW="$(docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME" -tAX -c \
+    "SELECT subtotal_kzt || '/' || processing_fee_kzt || '/' || total_kzt
+       FROM orders WHERE id = '${PAID_HOLD}';" 2>&1 | tr -d '\r\n ')"
+if [ "$FEE_ROW" = "5000.00/175.00/5175.00" ]; then
+    pass "68b the processing charge was applied, and orders_total_math_chk accepted it"
+else
+    fail "68b the money reads ${FEE_ROW:-nothing}, want 5000.00/175.00/5175.00"
+fi
+
+# --- calendar export (SRS 4.11) ----------------------------------------------
+
+CAL_HEADERS="$(curl -sS -D - -o "$(mktemp -t biletflow_cal).ics" \
+    "${API_URL}/api/v1/events/${EVENT_ID}/calendar.ics" 2>/dev/null)"
+if printf '%s' "$CAL_HEADERS" | grep -qi "content-type: text/calendar"; then
+    pass "69  the event exports as an iCalendar file"
+else
+    fail "69  the calendar Content-Type is not text/calendar"
+fi
+
+CAL_BODY="$(curl -sS "${API_URL}/api/v1/events/${EVENT_ID}/calendar.ics" 2>/dev/null)"
+if printf '%s' "$CAL_BODY" | grep -q "BEGIN:VCALENDAR" &&
+   printf '%s' "$CAL_BODY" | grep -q "BEGIN:VEVENT" &&
+   printf '%s' "$CAL_BODY" | grep -q "DTSTART;TZID=Asia/Almaty:"; then
+    pass "69b it carries a VEVENT in the event's own timezone"
+else
+    fail "69b the calendar file is missing its VEVENT or timezone"
+fi
+
+if printf '%s' "$CAL_BODY" | grep -q "UID:${EVENT_ID}@biletflow.kz"; then
+    pass "69c the UID is stable, so a re-download replaces the entry"
+else
+    fail "69c the calendar UID is not the event id"
+fi
 
 # --- Phase 5: QR codes and printable PDF tickets -----------------------------
 
@@ -469,10 +599,10 @@ request POST /api/v1/events/"$EVENT_ID"/checkout - \
 expect_status 201 "22  an attendee checks out with the campaign discount"
 
 PROMO_ORDER_TOTAL="$(json_get "$HTTP_BODY" order.total_kzt)"
-if [ "$PROMO_ORDER_TOTAL" = "4000.00" ]; then
-    pass "22b the order is stored at the discounted 4000.00 KZT"
+if [ "$PROMO_ORDER_TOTAL" = "4140.00" ]; then
+    pass "22b the order is stored at the discounted 4140.00 KZT"
 else
-    fail "22b order total is ${PROMO_ORDER_TOTAL:-none}, want 4000.00"
+    fail "22b order total is ${PROMO_ORDER_TOTAL:-none}, want 4140.00 (4000 + the 3.5% processing charge)"
 fi
 
 REDEEMED="$(docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME" -tAX -c \

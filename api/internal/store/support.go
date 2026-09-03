@@ -68,6 +68,22 @@ type SupportMessage struct {
 	Body           string    `json:"body"`
 	IsInternalNote bool      `json:"is_internal_note"`
 	CreatedAt      time.Time `json:"created_at"`
+
+	// Attachment describes the uploaded file backing this message, if any
+	// (bonus, SRS 4.13). Nil when the message is text alone.
+	Attachment *MessageAttachment `json:"attachment,omitempty"`
+}
+
+// MessageAttachment is a file a support message carries.
+//
+// The four fields move together - support_messages_attachment_chk enforces
+// that in the database - so a half-populated attachment cannot reach a client
+// and render as a broken link.
+type MessageAttachment struct {
+	URL      string `json:"url"`
+	Filename string `json:"filename"`
+	MimeType string `json:"mime_type"`
+	Bytes    int64  `json:"bytes"`
 }
 
 // SupportStore reads and writes support conversations.
@@ -224,7 +240,9 @@ func (s *SupportStore) Messages(
 		SELECT m.id, m.support_case_id, m.sender_user_id,
 		       COALESCE(u.full_name, 'BiletFlow'),
 		       CASE WHEN m.sender_user_id = $2 THEN 'requester' ELSE 'staff' END,
-		       m.body, m.is_internal_note, m.created_at
+		       m.body, m.is_internal_note, m.created_at,
+		       m.attachment_url, m.attachment_filename,
+		       m.attachment_mime_type, m.attachment_bytes
 		  FROM support_messages m
 		  LEFT JOIN users u ON u.id = m.sender_user_id
 		 WHERE m.support_case_id = $1`
@@ -241,10 +259,23 @@ func (s *SupportStore) Messages(
 
 	messages := []SupportMessage{}
 	for rows.Next() {
-		var m SupportMessage
+		var (
+			m                   SupportMessage
+			url, filename, mime *string
+			size                *int64
+		)
 		if err := rows.Scan(&m.ID, &m.CaseID, &m.SenderID, &m.SenderName,
-			&m.SenderRole, &m.Body, &m.IsInternalNote, &m.CreatedAt); err != nil {
+			&m.SenderRole, &m.Body, &m.IsInternalNote, &m.CreatedAt,
+			&url, &filename, &mime, &size); err != nil {
 			return nil, err
+		}
+		// The database guarantees all four columns move together, so testing
+		// one is enough to know whether there is a file here.
+		if url != nil {
+			m.Attachment = &MessageAttachment{
+				URL: *url, Filename: derefOr(filename, ""),
+				MimeType: derefOr(mime, ""), Bytes: derefOrInt64(size, 0),
+			}
 		}
 		messages = append(messages, m)
 	}
@@ -257,6 +288,7 @@ func (s *SupportStore) Messages(
 // does not have to remember to change the status by hand.
 func (s *SupportStore) PostMessage(
 	ctx context.Context, caseID, senderID uuid.UUID, body string, internal, fromStaff bool,
+	attachment *MessageAttachment,
 ) (SupportMessage, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -264,16 +296,28 @@ func (s *SupportStore) PostMessage(
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	var (
+		url, filename, mime *string
+		size                *int64
+	)
+	if attachment != nil {
+		url, filename, mime, size =
+			&attachment.URL, &attachment.Filename, &attachment.MimeType, &attachment.Bytes
+	}
+
 	var m SupportMessage
 	err = tx.QueryRow(ctx, `
-		INSERT INTO support_messages (support_case_id, sender_user_id, body, is_internal_note)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO support_messages (support_case_id, sender_user_id, body, is_internal_note,
+		                              attachment_url, attachment_filename,
+		                              attachment_mime_type, attachment_bytes)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, support_case_id, sender_user_id, body, is_internal_note, created_at`,
-		caseID, senderID, body, internal,
+		caseID, senderID, body, internal, url, filename, mime, size,
 	).Scan(&m.ID, &m.CaseID, &m.SenderID, &m.Body, &m.IsInternalNote, &m.CreatedAt)
 	if err != nil {
 		return SupportMessage{}, mapError(err)
 	}
+	m.Attachment = attachment
 
 	// An internal note is not a reply to the customer, so it does not change
 	// the status the customer sees.
@@ -444,4 +488,11 @@ func (s *SupportStore) Counterpart(
 	return CaseParticipant{
 		UserID: &requesterID, FullName: requesterName, Email: requesterEmail,
 	}, nil
+}
+
+func derefOrInt64(p *int64, fallback int64) int64 {
+	if p == nil {
+		return fallback
+	}
+	return *p
 }

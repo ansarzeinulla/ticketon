@@ -2,6 +2,8 @@
 package api
 
 import (
+	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -41,6 +43,8 @@ type Server struct {
 	mailer   *email.Mailer
 
 	// Phase 12: account tokens, the admin portal and uploads.
+	seating       *store.SeatingStore
+	offline       *store.OfflineStore
 	accountTokens *store.TokenStore
 	admin         *store.AdminStore
 	attendees     *store.AttendeeStore
@@ -70,8 +74,11 @@ func NewWithSender(cfg config.Config, pool *pgxpool.Pool, sender email.Sender) *
 		staff:       store.NewStaffStore(pool),
 		support:     store.NewSupportStore(pool),
 		analytics:   store.NewAnalyticsStore(pool),
-		checkout:    store.NewCheckoutStore(pool),
-		audit:       store.NewAuditStore(pool),
+		checkout: store.NewCheckoutStoreWithFees(pool, store.Fees{
+			Percent:  cfg.ProcessingFeePercent,
+			FixedKZT: cfg.ProcessingFeeFixedKZT,
+		}),
+		audit: store.NewAuditStore(pool),
 
 		refunds:       store.NewRefundStore(pool),
 		activations:   store.NewActivationStore(pool),
@@ -79,6 +86,8 @@ func NewWithSender(cfg config.Config, pool *pgxpool.Pool, sender email.Sender) *
 		moderation:    store.NewModerationStore(pool),
 		profiles:      store.NewProfileStore(pool),
 
+		seating:       store.NewSeatingStore(pool),
+		offline:       store.NewOfflineStore(pool),
 		accountTokens: store.NewTokenStore(pool),
 		admin:         store.NewAdminStore(pool),
 		attendees:     store.NewAttendeeStore(pool),
@@ -92,6 +101,24 @@ func NewWithSender(cfg config.Config, pool *pgxpool.Pool, sender email.Sender) *
 	// owns the notification store it marks.
 	s.mailer = email.NewMailer(sender, s.markNotification)
 	return s
+}
+
+// StartHoldSweeper releases abandoned baskets on a timer (SRS 4.6).
+//
+// It returns immediately; the sweep runs until the context is cancelled. The
+// opportunistic release inside the hold transaction already guarantees that a
+// stale basket never blocks a real sale - this keeps the counters honest for
+// everything else, so an event page shows the right number remaining even when
+// nobody is shopping.
+func (s *Server) StartHoldSweeper(ctx context.Context) {
+	sweeper := store.NewSweeper(s.checkout, time.Minute, func(released int, err error) {
+		if err != nil {
+			slog.Error("hold sweeper", "error", err)
+			return
+		}
+		slog.Info("released abandoned reservations", "ticket_types_touched", released)
+	})
+	go sweeper.Run(ctx)
 }
 
 // Mailer exposes the notification dispatcher so main can drain it on shutdown
@@ -155,10 +182,29 @@ func (s *Server) Handler() http.Handler {
 	// Addressed by slug, because that is what appears in a shareable link.
 	mux.HandleFunc("GET /api/v1/public/events/{slug}", s.handleGetPublicEvent)
 
+	// --- calendar export (SRS 4.11) -----------------------------------------
+	// Addressed by id or slug, because the dashboard knows one and the public
+	// page knows the other. Public: a calendar file carries the same
+	// information the event page already shows.
+	mux.HandleFunc("GET /api/v1/events/{id}/calendar.ics", s.optionalAuth(s.handleEventCalendar))
+
 	// Checkout takes optionalAuth: guests may buy, and a signed-in buyer gets
 	// the order linked to their account.
 	mux.HandleFunc("POST /api/v1/events/{id}/checkout", s.optionalAuth(s.handleCheckout))
 	mux.HandleFunc("GET /api/v1/orders/{id}", s.optionalAuth(s.handleGetOrder))
+
+	// --- assigned seating (SRS 4.3.1) ---------------------------------------
+	// Public: an attendee sees what is left before deciding, and before
+	// signing in.
+	mux.HandleFunc("GET /api/v1/events/{id}/seats", s.optionalAuth(s.handleEventSeatMap))
+
+	// --- cart holds (SRS 4.6, 4.3.1) ----------------------------------------
+	// Anonymous, like checkout: an attendee picks seats before signing in, and
+	// demanding an account to look at a seat map would lose the sale.
+	mux.HandleFunc("POST /api/v1/events/{id}/holds", s.optionalAuth(s.handleCreateHold))
+	mux.HandleFunc("GET /api/v1/orders/{id}/hold", s.optionalAuth(s.handleGetHold))
+	mux.HandleFunc("DELETE /api/v1/orders/{id}/hold", s.optionalAuth(s.handleReleaseHold))
+	mux.HandleFunc("POST /api/v1/orders/{id}/confirm", s.optionalAuth(s.handleConfirmHold))
 
 	// --- refunds (SRS 4.9) --------------------------------------------------
 	// Addressed by order, authorised by the order's event.
@@ -201,6 +247,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/events/{id}/attendees", s.requireAuth(s.handleSearchAttendees))
 	mux.HandleFunc("POST /api/v1/events/{id}/check-in/manual",
 		s.requireAuth(s.handleManualCheckIn))
+
+	// SRS 4.8: work offline, then reconcile. The roster is the guest list plus
+	// the means to validate it, so it is gated exactly like scanning.
+	mux.HandleFunc("GET /api/v1/events/{id}/roster", s.requireAuth(s.handleEventRoster))
+	mux.HandleFunc("POST /api/v1/events/{id}/check-in/sync",
+		s.requireAuth(s.handleSyncCheckIns))
 	mux.HandleFunc("GET /api/v1/events/{id}/check-in/stats", s.requireAuth(s.handleCheckInStats))
 	mux.HandleFunc("POST /api/v1/tickets/{id}/check-in/reverse", s.requireAuth(s.handleReverseCheckIn))
 

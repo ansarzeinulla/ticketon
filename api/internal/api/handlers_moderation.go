@@ -58,7 +58,7 @@ func (s *Server) handleReportEvent(w http.ResponseWriter, r *http.Request) {
 	if !slices.Contains(store.ReportReasons, req.Reason) {
 		errs.add("reason", "Choose one of: "+joinWords(store.ReportReasons)+".")
 	}
-	if len(req.Details) > maxReportDetails {
+	if runeLen(req.Details) > maxReportDetails {
 		errs.add("details", "Keep the details under 2000 characters.")
 	}
 	if errs.any() {
@@ -150,7 +150,7 @@ func (s *Server) handleReviewReport(w http.ResponseWriter, r *http.Request) {
 	if !slices.Contains(store.ReportStatuses, req.Status) {
 		errs.add("status", "Choose one of: "+joinWords(store.ReportStatuses)+".")
 	}
-	if len(req.Resolution) > maxReportDetails {
+	if runeLen(req.Resolution) > maxReportDetails {
 		errs.add("resolution", "Keep the resolution under 2000 characters.")
 	}
 	if errs.any() {

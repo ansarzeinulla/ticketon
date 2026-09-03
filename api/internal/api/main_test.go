@@ -21,6 +21,9 @@ import (
 
 // testConfig mirrors production settings except for the bcrypt cost, which is
 // dropped to the minimum so the suite is not dominated by hashing time.
+// testFeePercent is the processing charge the test server applies.
+const testFeePercent = "3.5"
+
 func testConfig(t *testing.T) config.Config {
 	t.Helper()
 	return config.Config{

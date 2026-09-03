@@ -74,6 +74,13 @@ export interface BiletEvent {
 }
 
 /** POST /auth/register and POST /auth/login both return this. */
+/**
+ * What the Go API returns on sign-in.
+ *
+ * Server-side only now: the route handlers unwrap it, keep the token in an
+ * httpOnly cookie and return just the user, so no browser code ever sees an
+ * access_token (SRS 7).
+ */
 export interface AuthResponse {
   user: User;
   access_token: string;
@@ -771,4 +778,66 @@ export interface AttendeeTicket {
   checked_in_at?: string;
   /** Mirrors the gate's rule, so a row can be disabled rather than refused. */
   admissible: boolean;
+}
+
+// --- assigned seating (SRS 4.3.1) -------------------------------------------
+
+/**
+ * What the server knows about a seat.
+ *
+ * "Selected" is deliberately absent: that is this browser's own state, and no
+ * other client can know it.
+ */
+export type SeatStatus = "available" | "held" | "sold" | "unavailable";
+
+export interface Seat {
+  id: string;
+  number: string;
+  x: number;
+  y: number;
+  accessible: boolean;
+  status: SeatStatus;
+}
+
+export interface SeatRow {
+  id: string;
+  label: string;
+  seats: Seat[];
+}
+
+export interface SeatSection {
+  id: string;
+  name: string;
+  price_category: string;
+  ticket_type_id?: string;
+  ticket_type_name?: string;
+  price_kzt?: Money;
+  rows: SeatRow[];
+}
+
+export interface SeatMap {
+  event_id: string;
+  venue_id: string;
+  venue_name: string;
+  sections: SeatSection[];
+  min_x: number;
+  min_y: number;
+  max_x: number;
+  max_y: number;
+  total_seats: number;
+  available_seats: number;
+}
+
+/** A reserved basket (SRS 4.6). */
+export interface Hold {
+  order_id: string;
+  order_number: string;
+  event_id: string;
+  status: string;
+  items: OrderItem[];
+  subtotal_kzt: Money;
+  reserved_until: string;
+  seconds_remaining: number;
+  estimated_processing_fee_kzt: Money;
+  estimated_total_kzt: Money;
 }

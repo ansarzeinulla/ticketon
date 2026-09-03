@@ -6,13 +6,11 @@
  * client bundle smaller.
  */
 
-import { clearToken, getToken } from "@/lib/session";
 import type {
   AcceptedResponse,
   Activation,
   ActivationSubmission,
   AdminSearchResponse,
-  AuthResponse,
   BiletEvent,
   CheckoutInput,
   CheckoutResult,
@@ -27,7 +25,9 @@ import type {
   AnalyticsResponse,
   ApiErrorBody,
   OpenCaseInput,
+  Hold,
   PublicEventResponse,
+  SeatMap,
   RefundResponse,
   SupportCase,
   SupportThread,
@@ -51,12 +51,29 @@ import type {
 } from "@/lib/types";
 
 /**
- * Where the browser reaches the API.
+ * Where the browser reaches the API: this app's own origin (SRS 7).
  *
- * NEXT_PUBLIC_ is required: this value is inlined into the client bundle at
- * build time, because the browser calls the API directly.
+ * The browser no longer talks to the Go API directly. It calls
+ * /api/proxy/..., a Next.js route handler that holds the session token in an
+ * httpOnly cookie and attaches it server-side. Two things follow:
+ *
+ *   - a script injected into the page cannot read a bearer token, because the
+ *     browser never has one;
+ *   - the API's address is no longer public, so it need not be reachable from
+ *     the internet at all.
+ *
+ * A relative URL, so it works on whatever host the app is served from.
  */
-export const API_BASE_URL =
+export const API_BASE_URL = "/api/proxy";
+
+/**
+ * The Go API's address for links the browser follows directly.
+ *
+ * A few responses are files the browser fetches by navigating rather than by
+ * script - and those still go straight to the API, because a proxied download
+ * buys nothing. Public endpoints only: nothing here needs a session.
+ */
+export const PUBLIC_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1";
 
 /**
@@ -74,7 +91,7 @@ export const API_BASE_URL =
  * a container hostname anyway.
  */
 const SERVER_API_BASE_URL =
-  process.env.API_INTERNAL_BASE_URL || API_BASE_URL;
+  process.env.API_INTERNAL_BASE_URL || PUBLIC_API_BASE_URL;
 
 /** The base URL for wherever this code happens to be running. */
 function baseURL(): string {
@@ -90,7 +107,7 @@ function baseURL(): string {
  * cross-origin, the header is not).
  */
 export function ticketPDFURL(ticketID: string): string {
-  return `${API_BASE_URL}/tickets/${ticketID}/pdf`;
+  return `${PUBLIC_API_BASE_URL}/tickets/${ticketID}/pdf`;
 }
 
 /**
@@ -99,7 +116,7 @@ export function ticketPDFURL(ticketID: string): string {
  * printed page can never drift apart.
  */
 export function ticketQRURL(ticketID: string): string {
-  return `${API_BASE_URL}/tickets/${ticketID}/qr.png`;
+  return `${PUBLIC_API_BASE_URL}/tickets/${ticketID}/qr.png`;
 }
 
 /**
@@ -110,7 +127,7 @@ export function ticketQRURL(ticketID: string): string {
  * Composing the two produced /api/v1/api/v1/... and a broken image.
  */
 export function campaignQRURL(campaignID: string): string {
-  return `${API_BASE_URL}/campaigns/${campaignID}/qr.png`;
+  return `${PUBLIC_API_BASE_URL}/campaigns/${campaignID}/qr.png`;
 }
 
 /**
@@ -177,9 +194,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const headers: Record<string, string> = { Accept: "application/json" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
-  if (!anonymous) {
-    const bearer = token ?? getToken();
-    if (bearer) headers.Authorization = `Bearer ${bearer}`;
+  // A Server Component has no cookie jar of its own, so when it needs an
+  // authenticated call it passes the token explicitly. In the browser there is
+  // no token to pass: the session rides on the httpOnly cookie instead.
+  if (!anonymous && token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
   let response: Response;
@@ -192,8 +211,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal,
-      // The token travels in a header, so no cookies are sent cross-origin.
-      credentials: "omit",
+      // The session cookie must ride along. It is same-origin and httpOnly, so
+      // "include" here means "send the cookie the browser already has" - the
+      // script still cannot read it.
+      credentials: "same-origin",
       cache: "no-store",
     });
   } catch (cause) {
@@ -229,7 +250,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
     // A rejected token is stale: drop it so the app stops pretending to be
     // signed in. The AuthProvider notices and sends the user to /login.
-    if (response.status === 401) clearToken();
+    // The proxy has already cleared the stale cookie; nothing to do here but
+    // report it, and let AuthProvider notice on its next check.
 
     const remaining = (error as { remaining?: number } | undefined)?.remaining;
 
@@ -245,35 +267,88 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return parsed as T;
 }
 
+/**
+ * The session routes (SRS 7).
+ *
+ * These are this app's own route handlers, not the proxy: they are the only
+ * things allowed to mint or clear the httpOnly cookie, and they return a user
+ * without ever handing the token to JavaScript.
+ */
+async function session<T>(path: string, body?: unknown): Promise<T> {
+  const response = await fetch(`/api/auth${path}`, {
+    method: body === undefined ? "GET" : "POST",
+    headers: body === undefined
+      ? { Accept: "application/json" }
+      : { "Content-Type": "application/json", Accept: "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    const envelope = payload as ApiErrorBody | null;
+    throw new ApiError(
+      response.status,
+      envelope?.error?.code ?? "unknown_error",
+      envelope?.error?.message ?? `Request failed with HTTP ${response.status}.`,
+      envelope?.error?.fields ?? {},
+    );
+  }
+  return payload as T;
+}
+
 export const api = {
-  /** POST /auth/register - creates an account and returns a token with it. */
-  register(input: {
+  /** Create an account and start a session. */
+  async register(input: {
     email: string;
     password: string;
     full_name?: string;
     phone?: string;
     locale?: string;
-  }): Promise<AuthResponse> {
-    return request<AuthResponse>("/auth/register", {
-      method: "POST",
-      body: input,
-      anonymous: true,
-    });
-  },
-
-  /** POST /auth/login */
-  login(input: { email: string; password: string }): Promise<AuthResponse> {
-    return request<AuthResponse>("/auth/login", {
-      method: "POST",
-      body: input,
-      anonymous: true,
-    });
-  },
-
-  /** GET /auth/me - also doubles as "is this token still good?". */
-  async me(token?: string | null, signal?: AbortSignal): Promise<User> {
-    const data = await request<{ user: User }>("/auth/me", { token, signal });
+  }): Promise<User> {
+    const data = await session<{ user: User }>("/register", input);
     return data.user;
+  },
+
+  /** Sign in. The token stays server-side; only the user comes back. */
+  async login(input: { email: string; password: string }): Promise<User> {
+    const data = await session<{ user: User }>("/login", input);
+    return data.user;
+  },
+
+  /** End the session by clearing the cookie. */
+  async logout(): Promise<void> {
+    await session<{ status: string }>("/logout", {});
+  },
+
+  /**
+   * Who is signed in.
+   *
+   * In the browser this reads the httpOnly cookie server-side. A Server
+   * Component passes a token explicitly instead, because it has no cookie jar
+   * of its own to send.
+   */
+  async me(token?: string | null, signal?: AbortSignal): Promise<User> {
+    if (token) {
+      const data = await request<{ user: User }>("/auth/me", { token, signal });
+      return data.user;
+    }
+    const response = await fetch("/api/auth/me", {
+      credentials: "same-origin",
+      cache: "no-store",
+      signal,
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      const envelope = payload as ApiErrorBody | null;
+      throw new ApiError(
+        response.status,
+        envelope?.error?.code ?? "unauthorized",
+        envelope?.error?.message ?? "Not signed in.",
+      );
+    }
+    return (payload as { user: User }).user;
   },
 
   /**
@@ -790,11 +865,15 @@ export const api = {
     return `${API_BASE_URL}/admin/reports/events.csv`;
   },
 
-  /** GET the CSV report as a blob, with the bearer token attached. */
+  /**
+   * GET the CSV report as a blob.
+   *
+   * Through the proxy with the session cookie: a plain <a href> could not
+   * carry a bearer token, and now there is no token in the browser to carry.
+   */
   async adminReportBlob(): Promise<Blob> {
-    const token = getToken();
     const response = await fetch(api.adminReportURL(), {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: "same-origin",
     });
     if (!response.ok) {
       throw new ApiError(response.status, "report_failed", "Could not build the report.");
@@ -804,7 +883,6 @@ export const api = {
 
   /** POST /uploads/images - multipart, for an event banner (SRS 4.2). */
   async uploadImage(file: File): Promise<UploadedImage> {
-    const token = getToken();
     const form = new FormData();
     form.append("file", file);
 
@@ -813,7 +891,7 @@ export const api = {
     // make the upload unparseable on the server.
     const response = await fetch(`${API_BASE_URL}/uploads/images`, {
       method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: "same-origin",
       body: form,
     });
 
@@ -853,6 +931,53 @@ export const api = {
     return request(`/events/${eventID}/check-in/manual`, {
       method: "POST",
       body: { ticket_id: ticketID, device_label: deviceLabel },
+    });
+  },
+
+  // --- assigned seating and cart holds (SRS 4.3.1, 4.6) --------------------
+
+  /** GET /events/{id}/seats - the live seat map. */
+  async seatMap(eventID: string, signal?: AbortSignal): Promise<SeatMap> {
+    const data = await request<{ seat_map: SeatMap }>(`/events/${eventID}/seats`, {
+      signal,
+    });
+    return data.seat_map;
+  },
+
+  /**
+   * POST /events/{id}/holds - reserve seats for 15 minutes.
+   *
+   * Only seat ids travel: what a seat costs follows from where it is, and the
+   * server decides that. A basket that named its own prices would be a basket
+   * that could name the wrong ones.
+   */
+  async holdSeats(eventID: string, seatIDs: string[]): Promise<Hold> {
+    const data = await request<{ hold: Hold }>(`/events/${eventID}/holds`, {
+      method: "POST",
+      body: { seat_ids: seatIDs },
+    });
+    return data.hold;
+  },
+
+  /** GET /orders/{id}/hold - read a basket back, e.g. after a reload. */
+  async getHold(orderID: string, signal?: AbortSignal): Promise<Hold> {
+    const data = await request<{ hold: Hold }>(`/orders/${orderID}/hold`, { signal });
+    return data.hold;
+  },
+
+  /** DELETE /orders/{id}/hold - give the seats back now. */
+  releaseHold(orderID: string): Promise<{ status: string }> {
+    return request(`/orders/${orderID}/hold`, { method: "DELETE" });
+  },
+
+  /** POST /orders/{id}/confirm - pay for a held basket. */
+  confirmHold(
+    orderID: string,
+    input: { buyer_name: string; buyer_email: string; promo_code?: string },
+  ): Promise<CheckoutResult> {
+    return request<CheckoutResult>(`/orders/${orderID}/confirm`, {
+      method: "POST",
+      body: input,
     });
   },
 

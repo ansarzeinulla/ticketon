@@ -172,3 +172,27 @@ is refused exactly as a second scan would be, and the row records
 admission from a scanned one. A ticket that is already in, cancelled or
 refunded is shown with a disabled button rather than one that is certain to be
 refused.
+
+## Working offline (SRS 4.8)
+
+A venue door often has no reliable network, so the scanner keeps working without
+one. From the event list, **Offline mode** downloads the event's roster once,
+then admits tickets against it with the connection off.
+
+**The roster is hashes, never tokens.** The server returns the SHA-256 of each
+admission token (`GET /events/{id}/roster`); the device stores those in SQLite
+(`lib/offline-db.ts`) and, when a QR is scanned, hashes what it read with
+`expo-crypto` and compares hash to hash. A phone left on a table at the entrance
+therefore never holds the credential needed to forge a ticket — it can answer
+"is this ticket real?" without holding the answer to "what are the real
+tickets?".
+
+Every offline admission is written to a local queue and, the moment connectivity
+returns (`expo-network`, `lib/use-connectivity.ts`), synced to the server
+(`POST /events/{id}/check-in/sync`). The server judges each queued admission
+independently and reports back per ticket — `recorded`, `already_checked_in`,
+`not_valid` or `unknown_ticket` — so one ticket refunded while the door was
+offline cannot discard the good admissions queued behind it, and the winner of a
+conflict is always whoever synced first rather than whichever phone's clock was
+fastest. A queued admission not yet synced can still be undone at the door; once
+the server has it, the reversal goes through the online endpoint.

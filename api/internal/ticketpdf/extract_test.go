@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"unicode/utf16"
+	"unicode/utf8"
 )
 
 // PDF content streams sit between these markers.
@@ -51,7 +53,7 @@ func extractText(t *testing.T, pdf []byte) string {
 		}
 
 		for _, text := range showTextPattern.FindAllSubmatch(content, -1) {
-			out.WriteString(unescapePDFString(string(text[1])))
+			out.WriteString(decodeShownText(unescapePDFString(string(text[1]))))
 			out.WriteString("\n")
 		}
 	}
@@ -92,4 +94,30 @@ func unescapePDFString(s string) string {
 		b.WriteByte(s[i])
 	}
 	return b.String()
+}
+
+// decodeShownText turns one Tj operand back into readable text.
+//
+// With an embedded UTF-8 font, fpdf writes strings as UTF-16BE rather than as
+// plain bytes - which is precisely what lets a ticket carry Cyrillic. The
+// extractor has to undo that, or every assertion in this package would be
+// reading interleaved NUL bytes.
+//
+// A string that is not valid UTF-16BE is returned unchanged, so the helper
+// still works on anything written with a core font.
+func decodeShownText(raw string) string {
+	if len(raw) == 0 || len(raw)%2 != 0 {
+		return raw
+	}
+
+	units := make([]uint16, 0, len(raw)/2)
+	for i := 0; i < len(raw); i += 2 {
+		units = append(units, uint16(raw[i])<<8|uint16(raw[i+1]))
+	}
+
+	decoded := string(utf16.Decode(units))
+	if !utf8.ValidString(decoded) {
+		return raw
+	}
+	return decoded
 }

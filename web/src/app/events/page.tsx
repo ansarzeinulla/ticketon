@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { api } from "@/lib/api";
 import { formatInTimezone } from "@/lib/datetime";
+import { getTranslations } from "@/lib/i18n/server";
 import type { BiletEvent } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default async function EventCataloguePage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
+  const { t } = await getTranslations();
   const { page: rawPage } = await searchParams;
   const page = Math.max(1, Number.parseInt(rawPage ?? "1", 10) || 1);
 
@@ -59,24 +61,22 @@ export default async function EventCataloguePage({
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">What&rsquo;s on</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("catalogue.title")}</h1>
         <p className="mt-1 text-sm text-foreground-muted">
-          Public events with tickets available on BiletFlow, soonest first.
+          {t("catalogue.subtitle")}
         </p>
       </header>
 
       {failed ? (
         <p className="rounded-xl border border-dashed border-border-subtle px-6 py-12 text-center text-sm text-foreground-muted">
-          The events list is unavailable right now. Please try again shortly.
+          {t("catalogue.unavailable")}
         </p>
       ) : events.length === 0 ? (
         <p
           className="rounded-xl border border-dashed border-border-subtle px-6 py-12 text-center text-sm text-foreground-muted"
           data-testid="catalogue-empty"
         >
-          {page > 1
-            ? "Nothing on this page."
-            : "No public events are on sale at the moment."}
+          {page > 1 ? t("catalogue.emptyMore") : t("catalogue.emptyFirst")}
         </p>
       ) : (
         <>
@@ -128,14 +128,19 @@ export default async function EventCataloguePage({
                   className="rounded-lg border border-border-subtle px-4 py-2 text-sm font-medium hover:bg-surface-muted"
                   rel="prev"
                 >
-                  ← Earlier
+                  {t("catalogue.earlier")}
                 </Link>
               ) : (
                 <span />
               )}
 
               <p className="text-sm text-foreground-muted">
-                Page {page} of {lastPage} · {total} event{total === 1 ? "" : "s"}
+                {t("catalogue.pageInfo", {
+                  page,
+                  last: lastPage,
+                  total,
+                  events: total === 1 ? t("catalogue.eventOne") : t("catalogue.eventMany"),
+                })}
               </p>
 
               {page < lastPage ? (
@@ -144,7 +149,7 @@ export default async function EventCataloguePage({
                   className="rounded-lg border border-border-subtle px-4 py-2 text-sm font-medium hover:bg-surface-muted"
                   rel="next"
                 >
-                  Later →
+                  {t("catalogue.later")}
                 </Link>
               ) : (
                 <span />

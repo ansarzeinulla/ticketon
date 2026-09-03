@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { EventAnalyticsTracker } from "@/components/event-analytics-tracker";
+import { SeatedPurchase } from "@/components/seated-purchase";
 import { ApiError, api } from "@/lib/api";
 import { formatInTimezone } from "@/lib/datetime";
+import { getTranslations } from "@/lib/i18n/server";
 
 import { TicketSelector } from "./ticket-selector";
 
@@ -22,6 +25,7 @@ export default async function PublicEventPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
+  const { t } = await getTranslations();
 
   const data = await loadEvent(slug);
   if (!data) notFound();
@@ -50,6 +54,16 @@ export default async function PublicEventPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
+      {/*
+        Reports the view, and separately whether it arrived through a campaign
+        QR (bonus). No token is sent - only the fact that one was present.
+      */}
+      <EventAnalyticsTracker
+        slug={event.slug}
+        category={event.category}
+        viaCampaignQR={Boolean(campaignToken)}
+      />
+
       <article className="space-y-8">
         {event.cover_image_url && (
           <figure>
@@ -77,17 +91,20 @@ export default async function PublicEventPage({
 
           <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
             <div>
-              <dt className="text-xs text-foreground-muted">When</dt>
+              <dt className="text-xs text-foreground-muted">{t("eventPage.when")}</dt>
               <dd className="mt-0.5 font-medium">
                 {formatInTimezone(event.starts_at, event.timezone)}
               </dd>
               <dd className="text-xs text-foreground-muted">
-                until {formatInTimezone(event.ends_at, event.timezone)} ({event.timezone})
+                {t("eventPage.until", {
+                  time: formatInTimezone(event.ends_at, event.timezone),
+                  tz: event.timezone,
+                })}
               </dd>
             </div>
             {event.venue_name && (
               <div>
-                <dt className="text-xs text-foreground-muted">Where</dt>
+                <dt className="text-xs text-foreground-muted">{t("eventPage.where")}</dt>
                 <dd className="mt-0.5 font-medium">{event.venue_name}</dd>
                 {event.venue_address && (
                   <dd className="text-xs text-foreground-muted">{event.venue_address}</dd>
@@ -104,12 +121,10 @@ export default async function PublicEventPage({
             data-testid="suspended-banner"
           >
             <h2 className="text-base font-semibold text-danger">
-              Ticket sales suspended
+              {t("eventPage.suspendedTitle")}
             </h2>
             <p className="mt-1 text-sm text-danger/90">
-              BiletFlow has suspended this event pending review, so no new tickets can
-              be bought. Tickets already issued remain valid — if you are holding one,
-              contact the organizer from your order page for the latest information.
+              {t("eventPage.suspendedBody")}
             </p>
           </div>
         )}
@@ -121,14 +136,13 @@ export default async function PublicEventPage({
             data-testid="paid-sales-pending-banner"
           >
             <h2 className="text-base font-semibold text-warning">
-              Paid tickets are not on sale yet
+              {t("eventPage.paidPendingTitle")}
             </h2>
             <p className="mt-1 text-sm text-warning/90">
-              The organizer is still completing BiletFlow&apos;s activation checks for
-              this event.
+              {t("eventPage.paidPendingBody")}
               {hasFreeTier
-                ? " Free tickets below can be booked in the meantime."
-                : " Check back shortly."}
+                ? t("eventPage.paidPendingFree")
+                : t("eventPage.paidPendingCheckBack")}
             </p>
           </div>
         )}
@@ -146,9 +160,21 @@ export default async function PublicEventPage({
           looking for a problem that does not exist. The banner above has
           already explained the real reason.
         */}
-        {!suspended && !(paidSalesPending && !hasFreeTier) && (
+        {/*
+          An assigned-seating event is bought by picking a seat, not by
+          stepping a quantity: the attendee is choosing *where* to sit, and a
+          "+/-" cannot express that (SRS 4.3.1).
+        */}
+        {!suspended && !(paidSalesPending && !hasFreeTier) &&
+          event.seating_mode === "assigned_seating" && (
+            <SeatedPurchase eventID={event.id} eventSlug={event.slug} />
+          )}
+
+        {!suspended && !(paidSalesPending && !hasFreeTier) &&
+          event.seating_mode !== "assigned_seating" && (
           <TicketSelector
             eventID={event.id}
+            eventSlug={event.slug}
             eventTitle={event.title}
             /*
               While activation is outstanding the paid tiers are not offered.
@@ -168,7 +194,7 @@ export default async function PublicEventPage({
 
         {event.refund_policy && (
           <section className="rounded-xl border border-border-subtle bg-surface p-5">
-            <h2 className="text-sm font-semibold">Refund policy</h2>
+            <h2 className="text-sm font-semibold">{t("eventPage.refundPolicy")}</h2>
             <p className="mt-1 whitespace-pre-line text-sm text-foreground-muted">
               {event.refund_policy}
             </p>

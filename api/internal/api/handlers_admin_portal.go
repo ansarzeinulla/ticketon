@@ -25,7 +25,7 @@ type adminSearchResponse struct {
 // right tab first is a worse tool than showing every match.
 func (s *Server) handleAdminSearch(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
-	if len(query) > 200 {
+	if runeLen(query) > 200 {
 		httpx.WriteError(w, http.StatusBadRequest, httpx.CodeValidationFailed,
 			"That search term is too long.")
 		return

@@ -3,6 +3,9 @@ package api
 import (
 	"bytes"
 	"encoding/csv"
+	"image"
+	"image/color"
+	"image/png"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -110,8 +113,8 @@ func TestPhase12SuccessCriteria(t *testing.T) {
 		if column("title") != "Admin Portal Fest" {
 			t.Errorf("title = %q", column("title"))
 		}
-		if column("tickets_sold") != "2" || column("gross_kzt") != "10000.00" {
-			t.Errorf("sold = %q, gross = %q; want 2 and 10000.00",
+		if column("tickets_sold") != "2" || column("gross_kzt") != "10350.00" {
+			t.Errorf("sold = %q, gross = %q; want 2 and 10350.00 (10000 plus the 3.5 percent fee)",
 				column("tickets_sold"), column("gross_kzt"))
 		}
 		if column("organizer_email") != organizer.Email {
@@ -340,19 +343,22 @@ func tokenFromConsole(t *testing.T, output, marker string) string {
 	return strings.TrimSpace(rest)
 }
 
-// pngBytes is the smallest valid PNG: an 1x1 transparent pixel. Content is
-// sniffed from these first bytes, so it has to be a real one.
+// pngBytes is a real 256x256 PNG. It has to clear the uploader's minimum
+// dimension check (200x200), so a 1x1 pixel will not do; the pattern is
+// deterministic so repeated calls return byte-identical content, which the
+// round-trip assertion relies on.
 func pngBytes() []byte {
-	return []byte{
-		0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a,
-		0x00, 0x00, 0x00, 0x0d, 'I', 'H', 'D', 'R',
-		0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-		0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
-		0x89, 0x00, 0x00, 0x00, 0x0a, 'I', 'D', 'A', 'T',
-		0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05,
-		0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00,
-		0x00, 0x00, 'I', 'E', 'N', 'D', 0xae, 0x42, 0x60, 0x82,
+	img := image.NewRGBA(image.Rect(0, 0, 256, 256))
+	for y := 0; y < 256; y++ {
+		for x := 0; x < 256; x++ {
+			img.Set(x, y, color.RGBA{R: uint8(x), G: uint8(y), B: 128, A: 255})
+		}
 	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
 
 // uploadImage posts a multipart image the way the browser does.

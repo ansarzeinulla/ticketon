@@ -75,11 +75,13 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 			// organizer_display_name_not_blank_chk would reject it anyway; a
 			// named field error is more use than a constraint violation.
 			errs.add("display_name", "The display name cannot be blank.")
-		}
-		if len(update.DisplayName.Value) > 200 {
-			errs.add("display_name", "Keep the display name under 200 characters.")
+		} else if msg := validateLine("Display name", update.DisplayName.Value, minNameLength, maxNameLength); msg != "" {
+			errs.add("display_name", msg)
 		}
 	}
+	validateOptionalText(errs, "legal_name", "Legal name", update.LegalName, maxNameLength, false)
+	validateOptionalText(errs, "description", "Description", update.Description, maxDescriptionLength, true)
+	validateOptionalText(errs, "contact_phone", "Contact phone", update.ContactPhone, 40, false)
 
 	// contact_email is a citext column with no shape constraint, so an obvious
 	// non-address is caught here rather than stored and later bounced.
@@ -87,10 +89,10 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		!blank(update.ContactEmail.Value) && !looksLikeEmail(update.ContactEmail.Value) {
 		errs.add("contact_email", "Enter a valid email address.")
 	}
-	if update.WebsiteURL.Set && update.WebsiteURL.Valid && !blank(update.WebsiteURL.Value) &&
-		!strings.HasPrefix(update.WebsiteURL.Value, "http://") &&
-		!strings.HasPrefix(update.WebsiteURL.Value, "https://") {
-		errs.add("website_url", "The website must start with http:// or https://.")
+	if update.WebsiteURL.Set && update.WebsiteURL.Valid && !blank(update.WebsiteURL.Value) {
+		if msg := validateURL("The website", update.WebsiteURL.Value, maxURLLength); msg != "" {
+			errs.add("website_url", "The website must be a valid http(s) URL under 500 characters.")
+		}
 	}
 
 	if errs.any() {

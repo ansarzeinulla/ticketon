@@ -105,9 +105,10 @@ func TestPhase9SuccessCriteria(t *testing.T) {
 		t.Errorf("criterion 1: check_in_percentage = %v, want %v", got, wantCheckInPct)
 	}
 
-	// 4 tickets at 5000 = 20000 KZT, 1 of 4 checked in = 25%.
-	if a["gross_revenue_kzt"] != "20000.00" {
-		t.Errorf("criterion 1: gross revenue = %v, want 20000.00", a["gross_revenue_kzt"])
+	// 4 tickets at 5000 = 20000 KZT, plus the 3.5% processing charge that
+	// SRS 3.3 adds to each transaction = 20700. 1 of 4 checked in = 25%.
+	if a["gross_revenue_kzt"] != "20700.00" {
+		t.Errorf("criterion 1: gross revenue = %v, want 20700.00", a["gross_revenue_kzt"])
 	}
 	if decimal(a, "check_in_percentage") != 25 {
 		t.Errorf("criterion 1: check-in = %v%%, want 25", a["check_in_percentage"])
@@ -334,8 +335,8 @@ func TestAnalyticsCountsDiscountsAndCampaigns(t *testing.T) {
 	a := analytics(res)
 
 	// 8000 discounted + 5000 plain = 13000 gross, 2000 discounted.
-	if a["gross_revenue_kzt"] != "13000.00" {
-		t.Errorf("gross_revenue_kzt = %v, want 13000.00", a["gross_revenue_kzt"])
+	if a["gross_revenue_kzt"] != "13455.00" {
+		t.Errorf("gross_revenue_kzt = %v, want 13455.00 (13000 plus the 3.5 percent fee)", a["gross_revenue_kzt"])
 	}
 	if a["discounts_kzt"] != "2000.00" {
 		t.Errorf("discounts_kzt = %v, want 2000.00", a["discounts_kzt"])
@@ -347,7 +348,7 @@ func TestAnalyticsCountsDiscountsAndCampaigns(t *testing.T) {
 	}
 	cs := byCampaign[0].(map[string]any)
 	if cs["code"] != "ANALYTICS20" || number(cs, "tickets_sold") != 2 ||
-		cs["revenue_kzt"] != "8000.00" {
+		cs["revenue_kzt"] != "8280.00" {
 		t.Errorf("campaign line = %v", cs)
 	}
 }
@@ -396,8 +397,8 @@ func TestAnalyticsFilters(t *testing.T) {
 	today := time.Now().UTC().Format("2006-01-02")
 	current := c.get(path+"?from="+today+"&to="+today, organizer.Token)
 	requireStatus(t, current, http.StatusOK)
-	if got := analytics(current)["gross_revenue_kzt"]; got != "20000.00" {
-		t.Errorf("today's revenue = %v, want 20000.00", got)
+	if got := analytics(current)["gross_revenue_kzt"]; got != "20700.00" {
+		t.Errorf("today's revenue = %v, want 20700.00 including the processing fee", got)
 	}
 
 	requireErrorCode(t, c.get(path+"?from=not-a-date", organizer.Token),

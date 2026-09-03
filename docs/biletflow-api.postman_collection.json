@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "BiletFlow API (Phases 2-12)",
+    "name": "BiletFlow API (Phases 2-13)",
     "description": "Authentication and event management for the BiletFlow platform.\n\nRun the requests in order: Register saves the access token into the {{token}} collection variable, so every later request is already authenticated. Create Event saves {{eventId}}.\n\nStart the stack first:  make up && make api-run",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -2030,6 +2030,145 @@
               ]
             },
             "description": "Platform admins only. One CSV row per event: status, lifecycle, organizer, capacity, tickets sold, checked in, orders, gross, discounts, refunds, net and activation state (SRS 4.12)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Cart holds & calendar export",
+      "description": "Phase 13: SRS 4.6, 3.3, 4.11.",
+      "item": [
+        {
+          "name": "Reserve a basket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/holds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "holds"
+              ]
+            },
+            "description": "Reserves inventory for 15 minutes without selling it (SRS 4.6). Returns the reservation, its deadline, and the price including the processing charge - so an attendee sees what they will pay before committing. seat_ids is for assigned seating.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"ticket_type_id\": \"{{ticketTypeId}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"seat_ids\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Read a basket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/hold",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{orderId}}",
+                "hold"
+              ]
+            },
+            "description": "Resumes a checkout after a page reload. A basket whose time is up is released here and reported as expired."
+          }
+        },
+        {
+          "name": "Cancel a basket",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/hold",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{orderId}}",
+                "hold"
+              ]
+            },
+            "description": "Puts the inventory back immediately, rather than waiting out the fifteen minutes for somebody who has visibly walked away."
+          }
+        },
+        {
+          "name": "Pay for a basket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{orderId}}",
+                "confirm"
+              ]
+            },
+            "description": "Turns the reservation into a sale: reserved becomes sold, the discount and the processing charge are applied, tickets are issued and the confirmation email is sent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyer_name\": \"Aigerim Serikova\",\n  \"buyer_email\": \"aigerim@biletflow.test\",\n  \"promo_code\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Download the calendar file",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/{{eventId}}/calendar.ics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{eventId}}",
+                "calendar.ics"
+              ]
+            },
+            "description": "An RFC 5545 iCalendar file in the event's own timezone (SRS 4.11). Addressable by id or by slug. The UID is stable, so downloading it again replaces the entry; a cancelled event exports STATUS:CANCELLED."
           }
         }
       ]

@@ -39,6 +39,11 @@ type checkoutRequest struct {
 	// The discount itself is never accepted from the client (SRS 4.14).
 	PromoCode     string `json:"promo_code"`
 	CampaignToken string `json:"campaign_token"`
+
+	// SeatIDs buys specific seats in one step, for an assigned-seating event
+	// (SRS 4.3.1). When present the tiers are derived from the seats, so
+	// `items` is not needed.
+	SeatIDs []string `json:"seat_ids"`
 }
 
 // handleCheckout runs the simulated purchase.
@@ -70,50 +75,7 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// --- the event has to be open for business ------------------------------
-	switch {
-	case event.Status == store.EventStatusSuspended:
-		// SRS 4.12: a suspended event stops selling immediately. Checked before
-		// any inventory is touched, so a suspension takes effect on the very
-		// next request rather than after whatever is in flight.
-		httpx.WriteError(w, http.StatusForbidden, CodeEventSuspended,
-			"Ticket sales for this event have been suspended by BiletFlow pending review.")
-		return
-	case event.Status == store.EventStatusCancelled:
-		httpx.WriteError(w, http.StatusConflict, CodeSalesClosed,
-			"This event has been cancelled and is no longer selling tickets.")
-		return
-	case event.Status != store.EventStatusPublished:
-		httpx.WriteError(w, http.StatusConflict, CodeSalesClosed,
-			"This event is not on sale.")
-		return
-	}
-
-	// SRS 4.12: suspending a user has to stop their events taking money, not
-	// merely block their own login. Checked here, alongside the event's own
-	// status and before any inventory is touched, so a suspension takes effect
-	// on the very next request. Tickets already sold stay valid - stranding
-	// paying attendees is not the remedy for an organizer's misconduct.
-	organizer, err := s.users.GetByID(r.Context(), event.OrganizerID)
-	if err != nil && !errors.Is(err, store.ErrNotFound) {
-		httpx.WriteInternalError(w, r, err)
-		return
-	}
-	if organizer.Status == store.StatusSuspended {
-		httpx.WriteError(w, http.StatusForbidden, CodeOrganizerSuspended,
-			"Ticket sales for this event are paused while BiletFlow reviews the organizer's account.")
-		return
-	}
-
-	now := s.now()
-	if event.RegistrationOpensAt != nil && now.Before(*event.RegistrationOpensAt) {
-		httpx.WriteError(w, http.StatusConflict, CodeSalesClosed,
-			"Registration for this event has not opened yet.")
-		return
-	}
-	if event.RegistrationClosesAt != nil && !now.Before(*event.RegistrationClosesAt) {
-		httpx.WriteError(w, http.StatusConflict, CodeSalesClosed,
-			"Registration for this event has closed.")
+	if !s.eventIsOpenForSales(w, r, event) {
 		return
 	}
 
@@ -124,47 +86,28 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 	if msg := validateEmail(buyerEmail); msg != "" {
 		errs.add("buyer_email", msg)
 	}
-	if blank(req.BuyerName) {
-		errs.add("buyer_name", "Your name is required.")
-	} else if len(req.BuyerName) > maxNameLength {
-		errs.add("buyer_name", "Name is too long.")
+	if msg := validateLine("Your name", req.BuyerName, minNameLength, maxNameLength); msg != "" {
+		errs.add("buyer_name", msg)
 	}
 
-	if len(req.Items) == 0 {
-		errs.add("items", "Select at least one ticket.")
-	} else if len(req.Items) > maxItemsPerOrder {
-		errs.add("items", "Too many different ticket types in one order.")
+	seatIDs, seatErr := parseUUIDs(req.SeatIDs)
+	if seatErr != nil {
+		errs.add("seat_ids", "Each seat must be identified by a UUID.")
 	}
 
-	// Merge duplicate lines so two entries for the same type are one purchase,
-	// and so the per-order limit cannot be dodged by splitting the request.
-	merged := map[uuid.UUID]int{}
-	order := []uuid.UUID{}
-	for i, item := range req.Items {
-		id, parseErr := uuid.Parse(item.TicketTypeID)
-		if parseErr != nil {
-			errs.add("items", "Each item needs a ticket_type_id in UUID form.")
-			break
+	// Seats price themselves; only a general admission basket names tiers.
+	var items []store.CheckoutItem
+	if len(seatIDs) == 0 {
+		merged, itemErrs := mergeCheckoutItems(req.Items)
+		for field, message := range itemErrs {
+			errs.add(field, message)
 		}
-		if item.Quantity <= 0 {
-			errs.add("items", "Each selected ticket type needs a quantity of at least 1.")
-			break
-		}
-		if _, seen := merged[id]; !seen {
-			order = append(order, id)
-		}
-		merged[id] += item.Quantity
-		_ = i
+		items = merged
 	}
 
 	if errs.any() {
 		httpx.WriteValidationError(w, errs)
 		return
-	}
-
-	items := make([]store.CheckoutItem, 0, len(order))
-	for _, id := range order {
-		items = append(items, store.CheckoutItem{TicketTypeID: id, Quantity: merged[id]})
 	}
 
 	var buyerUserID *uuid.UUID
@@ -179,37 +122,16 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// --- resolve the promo, if the attendee brought one ---------------------
-	var promo *store.Campaign
-	if !blank(req.PromoCode) || !blank(req.CampaignToken) {
-		campaign, resolveErr := s.campaigns.Resolve(r.Context(), store.ResolveParams{
-			EventID:       event.ID,
-			Code:          req.PromoCode,
-			CampaignToken: req.CampaignToken,
-		})
-		if resolveErr != nil {
-			s.writePromoError(w, r, resolveErr)
-			return
-		}
-		if usableErr := store.CheckUsable(campaign, now); usableErr != nil {
-			s.writePromoError(w, r, usableErr)
-			return
-		}
-
-		// A campaign restricted to ticket types the buyer did not pick would
-		// otherwise silently discount nothing.
-		covers := false
-		for _, item := range items {
-			if campaign.AppliesTo(item.TicketTypeID) {
-				covers = true
-				break
-			}
-		}
-		if !covers {
-			s.writePromoError(w, r, store.ErrPromoNotApplicable)
-			return
-		}
-
-		promo = &campaign
+	// The basket is described as order items so one helper serves both this
+	// flow and the two-step confirm, which only has stored lines to work from.
+	asLines := make([]store.OrderItem, 0, len(items))
+	for _, item := range items {
+		asLines = append(asLines, store.OrderItem{TicketTypeID: item.TicketTypeID})
+	}
+	promo, ok := s.resolvePromoForBasket(w, r, event.ID, asLines,
+		req.PromoCode, req.CampaignToken)
+	if !ok {
+		return
 	}
 
 	// --- the atomic part -----------------------------------------------------
@@ -220,6 +142,7 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		BuyerEmail:  buyerEmail,
 		BuyerPhone:  req.BuyerPhone,
 		Items:       items,
+		SeatIDs:     seatIDs,
 		Promo:       promo,
 	})
 	if err != nil {
@@ -263,9 +186,30 @@ func (s *Server) writeCheckoutError(w http.ResponseWriter, r *http.Request, err 
 		maxErr        *store.ExceedsMaxPerOrderError
 		activationErr *store.PaidSalesNotActiveError
 		declinedErr   *store.PaymentDeclinedError
+		seatTaken     *store.SeatTakenError
+		seatGone      *store.SeatUnavailableError
 	)
 
 	switch {
+	case errors.Is(err, store.ErrHoldExpired):
+		// 409 rather than 410: the basket is gone, but the tickets are back on
+		// sale, so the useful thing for the UI to do is start again - not to
+		// tell somebody the page has vanished.
+		httpx.WriteError(w, http.StatusConflict, CodeHoldExpired,
+			"This reservation has expired and the tickets are back on sale. Please pick them again.")
+
+	case errors.Is(err, store.ErrHoldNotPending):
+		httpx.WriteError(w, http.StatusConflict, CodeHoldNotPending,
+			"This basket is no longer open - it may already have been paid for or cancelled.")
+
+	case errors.As(err, &seatGone):
+		httpx.WriteError(w, http.StatusConflict, CodeSeatUnavailable,
+			"One of those seats is no longer available. Refresh the map and choose again.")
+
+	case errors.As(err, &seatTaken):
+		httpx.WriteError(w, http.StatusConflict, CodeSeatTaken,
+			"Somebody just took that seat. Choose another.")
+
 	case errors.As(err, &declinedErr):
 		// 402 Payment Required: the request was well formed and the event was
 		// willing to sell, but the (simulated) money did not arrive. SRS 4.6:
@@ -344,4 +288,137 @@ func capitalise(s string) string {
 		runes[0] -= 'a' - 'A'
 	}
 	return string(runes)
+}
+
+// eventIsOpenForSales applies the gates that decide whether an event may take
+// an order at all, writing the refusal itself when it may not.
+//
+// Shared by the one-shot checkout and the cart hold: an event that cannot sell
+// must not be reservable either, or a suspended event would still be taking
+// stock off the shelf.
+func (s *Server) eventIsOpenForSales(
+	w http.ResponseWriter, r *http.Request, event store.Event,
+) bool {
+	switch {
+	case event.Status == store.EventStatusSuspended:
+		// SRS 4.12: a suspended event stops selling immediately. Checked before
+		// any inventory is touched, so a suspension takes effect on the very
+		// next request rather than after whatever is in flight.
+		httpx.WriteError(w, http.StatusForbidden, CodeEventSuspended,
+			"Ticket sales for this event have been suspended by BiletFlow pending review.")
+		return false
+	case event.Status == store.EventStatusCancelled:
+		httpx.WriteError(w, http.StatusConflict, CodeSalesClosed,
+			"This event has been cancelled and is no longer selling tickets.")
+		return false
+	case event.Status != store.EventStatusPublished:
+		httpx.WriteError(w, http.StatusConflict, CodeSalesClosed,
+			"This event is not on sale.")
+		return false
+	}
+
+	// SRS 4.12: suspending a user has to stop their events taking money, not
+	// merely block their own login. Checked here, alongside the event's own
+	// status and before any inventory is touched, so a suspension takes effect
+	// on the very next request. Tickets already sold stay valid - stranding
+	// paying attendees is not the remedy for an organizer's misconduct.
+	organizer, err := s.users.GetByID(r.Context(), event.OrganizerID)
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
+		httpx.WriteInternalError(w, r, err)
+		return false
+	}
+	if organizer.Status == store.StatusSuspended {
+		httpx.WriteError(w, http.StatusForbidden, CodeOrganizerSuspended,
+			"Ticket sales for this event are paused while BiletFlow reviews the organizer's account.")
+		return false
+	}
+
+	now := s.now()
+	if event.RegistrationOpensAt != nil && now.Before(*event.RegistrationOpensAt) {
+		httpx.WriteError(w, http.StatusConflict, CodeSalesClosed,
+			"Registration for this event has not opened yet.")
+		return false
+	}
+	if event.RegistrationClosesAt != nil && !now.Before(*event.RegistrationClosesAt) {
+		httpx.WriteError(w, http.StatusConflict, CodeSalesClosed,
+			"Registration for this event has closed.")
+		return false
+	}
+	return true
+}
+
+// mergeCheckoutItems validates the requested lines and folds duplicates
+// together, so two entries for the same tier are one purchase and the
+// per-order limit cannot be dodged by splitting the request.
+func mergeCheckoutItems(requested []checkoutItemRequest) ([]store.CheckoutItem, fieldErrors) {
+	errs := fieldErrors{}
+
+	if len(requested) == 0 {
+		errs.add("items", "Select at least one ticket.")
+		return nil, errs
+	}
+	if len(requested) > maxItemsPerOrder {
+		errs.add("items", "Too many different ticket types in one order.")
+		return nil, errs
+	}
+
+	merged := map[uuid.UUID]int{}
+	order := []uuid.UUID{}
+	for _, item := range requested {
+		id, err := uuid.Parse(item.TicketTypeID)
+		if err != nil {
+			errs.add("items", "Each item needs a ticket_type_id in UUID form.")
+			break
+		}
+		if item.Quantity <= 0 {
+			errs.add("items", "Each selected ticket type needs a quantity of at least 1.")
+			break
+		}
+		if _, seen := merged[id]; !seen {
+			order = append(order, id)
+		}
+		merged[id] += item.Quantity
+	}
+	if errs.any() {
+		return nil, errs
+	}
+
+	items := make([]store.CheckoutItem, 0, len(order))
+	for _, id := range order {
+		items = append(items, store.CheckoutItem{TicketTypeID: id, Quantity: merged[id]})
+	}
+	return items, errs
+}
+
+// resolvePromoForBasket validates a promo code against the tiers actually
+// being bought, writing the refusal itself when it does not apply.
+func (s *Server) resolvePromoForBasket(
+	w http.ResponseWriter, r *http.Request, eventID uuid.UUID,
+	items []store.OrderItem, promoCode, campaignToken string,
+) (*store.Campaign, bool) {
+	if blank(promoCode) && blank(campaignToken) {
+		return nil, true
+	}
+
+	campaign, err := s.campaigns.Resolve(r.Context(), store.ResolveParams{
+		EventID: eventID, Code: promoCode, CampaignToken: campaignToken,
+	})
+	if err != nil {
+		s.writePromoError(w, r, err)
+		return nil, false
+	}
+	if usableErr := store.CheckUsable(campaign, s.now()); usableErr != nil {
+		s.writePromoError(w, r, usableErr)
+		return nil, false
+	}
+
+	// A campaign restricted to tiers the buyer did not pick would otherwise
+	// silently discount nothing.
+	for _, item := range items {
+		if campaign.AppliesTo(item.TicketTypeID) {
+			return &campaign, true
+		}
+	}
+	s.writePromoError(w, r, store.ErrPromoNotApplicable)
+	return nil, false
 }

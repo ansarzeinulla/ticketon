@@ -1,4 +1,4 @@
-# BiletFlow Web — Phases 3-5, 7-10 & 12
+# BiletFlow Web — Phases 3-5, 7-10, 12 & 13
 
 Next.js 16 (App Router) + React 19 + Tailwind CSS 4 frontend for the Go API.
 
@@ -426,3 +426,84 @@ Both the banner and the refund policy render on the public event page. They use
 a plain `<img>` rather than `next/image`: the URL points at the API's upload
 route, which is not a configured image domain, and optimising a banner an
 organizer just uploaded buys nothing here.
+
+
+## The session no longer lives in JavaScript (Phase 13, SRS 7)
+
+The JWT used to sit in a cookie readable by `document.cookie`. Any injected
+script could lift it and replay it from anywhere. It now never reaches the
+browser:
+
+```
+browser  ->  /api/auth/login      (route handler)  ->  Go API
+             sets HttpOnly cookie, returns { user }
+
+browser  ->  /api/proxy/<path>    (route handler)  ->  Go API
+             reads the cookie, attaches Authorization: Bearer
+```
+
+On a signed-in page, `document.cookie`, `localStorage` and `sessionStorage` are
+all empty. `SameSite=Strict` because every request the app makes is
+same-origin, so nothing legitimate needs the cookie on a cross-site navigation
+- which removes CSRF as a category rather than mitigating it. The cost is that
+following a link from an email lands signed-out on the first click.
+
+The proxy forwards an **allowlist** of headers in each direction. Wholesale
+forwarding would let a page smuggle its own `Authorization` or `Cookie`
+upstream; the response side keeps `Content-Disposition`, which is what makes a
+PDF ticket, a CSV report or an .ics file download rather than render.
+
+`AuthProvider` no longer reads a token during render - there is nothing to
+read. It asks `/api/auth/me` once on mount, and that single question doubles as
+the validity check.
+
+A few links still point straight at the Go API: the ticket PDF, the ticket QR
+and the campaign QR. All three are public, and proxying a download buys
+nothing.
+
+## Analytics (Phase 13, bonus)
+
+GA4, off unless `NEXT_PUBLIC_GA4_MEASUREMENT_ID` is set. Four events -
+`view_event`, `campaign_visit`, `begin_checkout`, `purchase` - carrying an
+event slug, a price, a count, UTM parameters and the referrer's **host**.
+
+Never sent: names, emails, order ids, ticket codes, or campaign tokens. A
+`?c=CMP_...` token is a working discount credential; attribution reports that a
+visit arrived through a campaign QR, not which token it carried. BiletFlow's
+own analytics already attributes revenue per campaign, server-side.
+
+Two things this cost to get right, both found by looking at the rendered page:
+
+- the measurement id lives in a module **without** `"use client"`, because the
+  root layout is a Server Component - importing it from a client module handed
+  the server a client-reference stub and the script src came out as a
+  serialized error;
+- events are pushed onto `dataLayer` rather than through `window.gtag`. The tag
+  loads `afterInteractive` and the page view fires from an effect on mount, so
+  `gtag` frequently does not exist yet - calling it dropped the first event of
+  every visit.
+
+## Languages (SRS 8, §685)
+
+The customer-facing pages ship in **Kazakh (default), Russian and English**. A
+saved choice (the `biletflow_locale` cookie) wins; failing that the server reads
+`Accept-Language`; failing both it falls to Kazakh, because the platform is
+Kazakhstani and that is the right default here rather than English.
+
+The locale is resolved once, on the server (`lib/i18n/server.ts`), and drives
+both `<html lang>` and a client translator seeded through `I18nProvider`. Server
+Components translate directly with `getTranslations()`; client islands — the
+ticket selector, the checkout dialog, the promo box — read the same locale
+through `useT()`, so the interactive half never disagrees with the
+server-rendered half and there is no flash of the wrong language. The switcher
+writes the cookie through `/api/locale` and calls `router.refresh()`, which
+re-renders the Server Components too.
+
+The message catalogues live in `lib/i18n/dictionaries.ts`. English defines the
+`Dictionary` type, so a missing Kazakh or Russian string is a compile error, not
+a blank the visitor finds. Money and dates are never translated as words — they
+are formatted by `lib/money.ts` and `lib/datetime.ts`, which already localise
+them, and organizer-entered content (event titles, descriptions, ticket names,
+refund policies) is shown as stored rather than machine-translated. The
+organizer dashboard and admin console stay in English: SRS §685 scopes the
+requirement to the customer-facing interface.

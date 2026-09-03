@@ -160,13 +160,26 @@ export default function EventsScreen() {
                 nine times in ten. This is the other way in, for when a QR
                 cannot be scanned at all (SRS 4.8).
               */}
-              <Pressable
-                onPress={() => router.push(`/attendees/${item.id}`)}
-                testID={`find-attendee-${item.id}`}
-                style={({ pressed }) => [styles.secondary, pressed && styles.cardPressed]}
-              >
-                <Text style={styles.secondaryText}>Find attendee by name</Text>
-              </Pressable>
+              <View style={styles.secondaryRow}>
+                <Pressable
+                  onPress={() => router.push(`/attendees/${item.id}`)}
+                  testID={`find-attendee-${item.id}`}
+                  style={({ pressed }) => [styles.secondary, pressed && styles.cardPressed]}
+                >
+                  <Text style={styles.secondaryText}>Find by name</Text>
+                </Pressable>
+                {/*
+                  Offline check-in (SRS 4.8): download the roster now, then work
+                  the door with no network at all.
+                */}
+                <Pressable
+                  onPress={() => router.push(`/offline/${item.id}`)}
+                  testID={`offline-${item.id}`}
+                  style={({ pressed }) => [styles.secondary, pressed && styles.cardPressed]}
+                >
+                  <Text style={styles.secondaryText}>Offline mode</Text>
+                </Pressable>
+              </View>
             </Pressable>
           );
         }}
@@ -177,8 +190,9 @@ export default function EventsScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: theme.bg },
+  secondaryRow: { flexDirection: "row", gap: 10, marginTop: 12 },
   secondary: {
-    marginTop: 12,
+    flex: 1,
     borderColor: theme.border,
     borderWidth: 1,
     borderRadius: radius.sm,

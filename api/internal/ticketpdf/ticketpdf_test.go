@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/makiuchi-d/gozxing"
@@ -325,32 +326,6 @@ func TestRenderRequiresAToken(t *testing.T) {
 	}
 }
 
-// Cyrillic has no place in the core PDF font's cp1252 encoding, so it is
-// transliterated rather than rendered as the wrong glyphs.
-func TestRenderTransliteratesCyrillic(t *testing.T) {
-	ticket := sampleTicket()
-	ticket.EventTitle = "Концерт в Алматы"
-	ticket.AttendeeName = "Нурлан Аманов"
-
-	text := extractText(t, renderForText(t, ticket))
-	if !strings.Contains(text, "Kontsert v Almaty") {
-		t.Errorf("the Cyrillic title was not transliterated; got %q", text)
-	}
-	if !strings.Contains(text, "Nurlan Amanov") {
-		t.Error("the Cyrillic attendee name was not transliterated")
-	}
-}
-
-func TestPDFSafeKeepsLatinAccents(t *testing.T) {
-	// cp1252 covers Latin-1, so accents survive untouched.
-	if got := pdfSafe("Café Déjà Vu"); got != "Café Déjà Vu" {
-		t.Errorf("pdfSafe() = %q, want the accents preserved", got)
-	}
-	if got := pdfSafe("plain ascii"); got != "plain ascii" {
-		t.Errorf("pdfSafe() = %q, want it unchanged", got)
-	}
-}
-
 func TestTruncate(t *testing.T) {
 	if got := truncate("short", 20); got != "short" {
 		t.Errorf("truncate() = %q, want it unchanged", got)
@@ -365,4 +340,92 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// --- Unicode rendering (SRS 7) ----------------------------------------------
+
+// TestRenderKeepsCyrillic is the whole point of embedding a font: an attendee
+// called Нұрлан gets a ticket that says Нұрлан, not "Nurlan".
+func TestRenderKeepsCyrillic(t *testing.T) {
+	ticket := sampleTicket()
+	ticket.EventTitle = "Концерт в Алматы"
+	ticket.AttendeeName = "Нұрлан Аманов"
+	ticket.VenueName = "Алматы Арена"
+	ticket.TicketTypeName = "Жалпы кіру"
+
+	text := extractText(t, renderForText(t, ticket))
+
+	for _, want := range []string{
+		"Концерт в Алматы",
+		"Нұрлан Аманов",
+		"Алматы Арена",
+		"Жалпы кіру",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the ticket does not carry %q; extracted:\n%s", want, text)
+		}
+	}
+
+	// And nothing was transliterated on the way.
+	for _, unwanted := range []string{"Kontsert", "Nurlan", "Almaty Arena"} {
+		if strings.Contains(text, unwanted) {
+			t.Errorf("%q appears, so something is still transliterating", unwanted)
+		}
+	}
+}
+
+// TestRenderCoversKazakhSpecificLetters pins the letters that distinguish
+// Kazakh from Russian. These are exactly the ones a font with "Cyrillic
+// support" is most likely to be missing.
+func TestRenderCoversKazakhSpecificLetters(t *testing.T) {
+	const kazakh = "әғқңөұүһі ӘҒҚҢӨҰҮҺІ"
+
+	ticket := sampleTicket()
+	ticket.AttendeeName = kazakh
+
+	text := extractText(t, renderForText(t, ticket))
+	if !strings.Contains(text, kazakh) {
+		t.Errorf("Kazakh-specific letters did not survive; extracted:\n%s", text)
+	}
+}
+
+// TestRenderKeepsTheTengeSign: the ticket prints prices, and ₸ is not in
+// cp1252 either.
+func TestRenderKeepsTheTengeSign(t *testing.T) {
+	ticket := sampleTicket()
+	ticket.TicketTypeName = "VIP ₸15 000"
+
+	if text := extractText(t, renderForText(t, ticket)); !strings.Contains(text, "₸15 000") {
+		t.Errorf("the tenge sign did not render; extracted:\n%s", text)
+	}
+}
+
+// TestEmbeddedFontTravelsInThePDF: a reader on another machine must not need
+// DejaVu installed, so the font programme itself has to be in the file.
+func TestEmbeddedFontTravelsInThePDF(t *testing.T) {
+	pdf := renderForText(t, sampleTicket())
+
+	if !bytes.Contains(pdf, []byte("FontFile2")) {
+		t.Error("no embedded TrueType programme in the PDF")
+	}
+	if !bytes.Contains(pdf, []byte("ToUnicode")) {
+		t.Error("no ToUnicode map, so the text would not be selectable or searchable")
+	}
+}
+
+// TestTruncateCountsRunes guards the layout helper against the mistake that
+// UTF-8 makes easy: cutting a two-byte letter in half.
+func TestTruncateCountsRunes(t *testing.T) {
+	const cyrillic = "Алматы Арена Концерт"
+
+	got := truncate(cyrillic, 10)
+	if !utf8.ValidString(got) {
+		t.Errorf("truncate() produced invalid UTF-8: %q", got)
+	}
+	if runes := []rune(got); len(runes) > 12 {
+		t.Errorf("truncate() returned %d runes, want about 10", len(runes))
+	}
+	if !strings.HasPrefix(got, "Алматы") {
+		t.Errorf("truncate() = %q, want it to start with the original text", got)
+	}
 }

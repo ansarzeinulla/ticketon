@@ -575,3 +575,53 @@ Five requirements the earlier phases had left on the page.
 
 Details in [api/README.md](api/README.md), [web/README.md](web/README.md) and
 [mobile/README.md](mobile/README.md).
+
+## Deferred technical debt (Phase 13)
+
+Seven of the ten deferred items from the SRS. **Items 7 (i18n), 8 (interactive
+seat map) and 10 (offline scanning) are not built** — see the end of this
+section.
+
+- **Cart holds (SRS 4.6, 4.3.1):** picking tickets now reserves them
+  (`quantity_reserved`) instead of selling them. A basket lives for 15 minutes
+  and then goes back on sale, released three ways: explicitly when the attendee
+  cancels, opportunistically when anybody else touches that event's inventory,
+  and by a background sweeper for everything else. `POST /events/{id}/holds`,
+  `GET|DELETE /orders/{id}/hold`, `POST /orders/{id}/confirm`. The one-shot
+  `POST /checkout` is now *composed from* hold and confirm inside a single
+  transaction, so there is one implementation of buying a ticket, not two.
+- **Processing fees (SRS 3.3):** `total = subtotal − discount + fee`, computed
+  in PostgreSQL numeric. Default 3.5%, configurable with
+  `PROCESSING_FEE_PERCENT` / `PROCESSING_FEE_FIXED_KZT`. Free baskets and
+  fully-discounted baskets are charged nothing.
+- **Cyrillic PDFs (SRS 7):** the transliteration hack is gone. DejaVu Sans
+  Condensed is embedded in every ticket, so Kazakh and Russian render natively
+  — including ә ғ қ ң ө ұ ү һ і and the ₸ sign.
+- **Calendar export (SRS 4.11):** `GET /events/{id}/calendar.ics`, addressable
+  by id or slug, in the event's own timezone with a VTIMEZONE that travels with
+  the file. A stable UID means a re-download replaces the entry rather than
+  duplicating it, and a cancelled event exports `STATUS:CANCELLED`.
+- **Support attachments (bonus, SRS 4.13):** `support_messages` gained four
+  attachment columns that move together under one CHECK. A message references a
+  file already uploaded through `POST /uploads/images`, and the server refuses
+  any URL that is not one of its own.
+- **httpOnly session cookies (SRS 7):** the JWT no longer reaches the browser.
+  Next.js route handlers hold it in an `HttpOnly; SameSite=Strict` cookie and
+  proxy every API call. `document.cookie`, `localStorage` and `sessionStorage`
+  are all empty on a signed-in page.
+- **GA4 (bonus):** campaign-link visits, checkout starts and purchases, with
+  UTM and referrer-host attribution. No PII, and deliberately **no campaign
+  token** — attribution reports *that* a visit came through a QR, never which
+  discount credential it carried. Inert unless `NEXT_PUBLIC_GA4_MEASUREMENT_ID`
+  is set.
+
+### Not built
+
+- **i18n (kk/ru)** — the Cyrillic font subsets are wired into the layout, but
+  no locale switcher or message catalogue exists.
+- **Interactive seat map** — the backend half is done: `seat_holds` are written
+  and released with the basket, `order_items.seat_id` and the ticket's
+  section/row/number are populated, and one active hold per seat is enforced by
+  a partial unique index. What is missing is the seat-layout API, seed data for
+  a predefined venue, and the SVG picker itself.
+- **Offline scanning** — the scanner still requires a connection.

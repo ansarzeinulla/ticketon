@@ -75,3 +75,46 @@ export interface AttendeeTicket {
   /** Mirrors the gate's rule, so a row can be disabled rather than refused. */
   admissible: boolean;
 }
+
+/**
+ * One ticket as the offline scanner stores it (SRS 4.8).
+ *
+ * `token_hash` is the SHA-256 of the QR token, never the token itself: the
+ * roster is a whole event's worth of admission credentials sitting on a device
+ * that lives on a table at a venue door, and a plaintext copy would let anyone
+ * who lifted the phone forge every ticket in the house. The device hashes what
+ * it scans and compares hashes.
+ */
+export interface RosterEntry {
+  ticket_id: string;
+  token_hash: string;
+  ticket_code: string;
+  attendee_name: string;
+  ticket_type_name: string;
+  seat_label?: string;
+  status: "valid" | "checked_in" | "cancelled" | "refunded" | string;
+}
+
+/** A downloaded snapshot of an event's tickets. */
+export interface Roster {
+  event_id: string;
+  event_title: string;
+  generated_at: string;
+  tickets: RosterEntry[];
+}
+
+/** What the server made of one queued admission on reconciliation. */
+export interface SyncResult {
+  ticket_id: string;
+  outcome: "recorded" | "already_checked_in" | "not_valid" | "unknown_ticket" | string;
+  attendee_name?: string;
+  checked_in_at?: string;
+}
+
+/** The tallied result of one sync, plus the per-ticket detail. */
+export interface SyncSummary {
+  results: SyncResult[];
+  recorded: number;
+  already_checked_in: number;
+  rejected: number;
+}

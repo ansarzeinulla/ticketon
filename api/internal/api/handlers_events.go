@@ -50,6 +50,25 @@ type eventListResponse struct {
 	Offset int           `json:"offset"`
 }
 
+// validateOptionalText applies the length and character rules to an optional
+// event field on a patch, but only when the patch actually sets it to a
+// non-blank value - clearing a field (an explicit null, or blank) is a
+// different intent the store handles.
+func validateOptionalText(errs fieldErrors, field, label string, value store.Optional[string], max int, multiline bool) {
+	if !value.Set || !value.Valid || blank(value.Value) {
+		return
+	}
+	var msg string
+	if multiline {
+		msg = validateMultiline(label, value.Value, 1, max)
+	} else {
+		msg = validateLine(label, value.Value, 1, max)
+	}
+	if msg != "" {
+		errs.add(field, msg)
+	}
+}
+
 func (s *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request) {
 	var req createEventRequest
 	if err := httpx.DecodeJSON(w, r, &req); err != nil {
@@ -59,11 +78,11 @@ func (s *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request) {
 
 	errs := fieldErrors{}
 
-	if blank(req.Title) {
-		errs.add("title", "Title is required.")
-	} else if len(req.Title) > maxTitleLength {
-		errs.add("title", "Title must not exceed 200 characters.")
+	if msg := validateLine("Title", req.Title, minTitleLength, maxTitleLength); msg != "" {
+		errs.add("title", msg)
 	}
+	validateEventText(errs, req.Description, req.Category, req.VenueName,
+		req.VenueAddress, req.RefundPolicy, req.CoverImageURL)
 
 	if req.StartsAt == nil {
 		errs.add("starts_at", "Start time is required, as an RFC 3339 timestamp.")
@@ -128,8 +147,8 @@ func (s *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request) {
 		slug = store.Slugify(*req.Slug)
 		if slug == "" {
 			errs.add("slug", "Slug must contain at least one letter or digit.")
-		} else if len(slug) > maxSlugLength {
-			errs.add("slug", "Slug must not exceed 80 characters.")
+		} else if msg := validateSlug(slug); msg != "" {
+			errs.add("slug", msg)
 		}
 	}
 
@@ -380,10 +399,10 @@ func (s *Server) handleUpdateEvent(w http.ResponseWriter, r *http.Request) {
 	errs := fieldErrors{}
 
 	if req.Title.Set {
-		if !req.Title.Valid || blank(req.Title.Value) {
+		if !req.Title.Valid {
 			errs.add("title", "Title must not be blank.")
-		} else if len(req.Title.Value) > maxTitleLength {
-			errs.add("title", "Title must not exceed 200 characters.")
+		} else if msg := validateLine("Title", req.Title.Value, minTitleLength, maxTitleLength); msg != "" {
+			errs.add("title", msg)
 		}
 	}
 
@@ -424,6 +443,18 @@ func (s *Server) handleUpdateEvent(w http.ResponseWriter, r *http.Request) {
 		errs.add("capacity", "Capacity must be greater than zero.")
 	}
 
+	// Optional free-text fields, when the patch touches them.
+	validateOptionalText(errs, "description", "Description", req.Description, maxDescriptionLength, true)
+	validateOptionalText(errs, "category", "Category", req.Category, maxCategoryLength, false)
+	validateOptionalText(errs, "venue_name", "Venue name", req.VenueName, maxVenueNameLength, false)
+	validateOptionalText(errs, "venue_address", "Venue address", req.VenueAddress, maxVenueAddressLength, true)
+	validateOptionalText(errs, "refund_policy", "Refund policy", req.RefundPolicy, maxRefundPolicyLength, true)
+	if req.CoverImageURL.Set && req.CoverImageURL.Valid && !blank(req.CoverImageURL.Value) {
+		if msg := validateURL("Cover image URL", req.CoverImageURL.Value, maxURLLength); msg != "" {
+			errs.add("cover_image_url", msg)
+		}
+	}
+
 	// The resulting seating mode must still have a venue behind it.
 	seating := event.SeatingMode
 	if req.SeatingMode.Set && req.SeatingMode.Valid {
@@ -444,6 +475,8 @@ func (s *Server) handleUpdateEvent(w http.ResponseWriter, r *http.Request) {
 			normalized := store.Slugify(req.Slug.Value)
 			if normalized == "" {
 				errs.add("slug", "Slug must contain at least one letter or digit.")
+			} else if msg := validateSlug(normalized); msg != "" {
+				errs.add("slug", msg)
 			} else {
 				req.Slug.Value = normalized
 			}

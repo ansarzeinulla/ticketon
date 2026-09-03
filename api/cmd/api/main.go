@@ -46,6 +46,10 @@ func run() error {
 
 	apiServer := api.New(cfg, pool)
 
+	// Abandoned baskets go back on sale without anybody asking (SRS 4.6).
+	// Tied to the run context, so it stops when the process is shutting down.
+	apiServer.StartHoldSweeper(ctx)
+
 	server := &http.Server{
 		Addr:         cfg.Addr(),
 		Handler:      apiServer.Handler(),

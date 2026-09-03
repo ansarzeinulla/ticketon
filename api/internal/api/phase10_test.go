@@ -95,8 +95,8 @@ func TestPhase10SuccessCriteria(t *testing.T) {
 			t.Errorf("order=%s payment=%s refund=%s; want refunded/refunded/succeeded",
 				orderStatus, paymentStatus, refundStatus)
 		}
-		if refundedKZT != "10000.00" {
-			t.Errorf("refunded_kzt = %s, want 10000.00", refundedKZT)
+		if refundedKZT != "10350.00" {
+			t.Errorf("refunded_kzt = %s, want 10350.00 (the fee is refunded too)", refundedKZT)
 		}
 		if auditEntries != 1 {
 			t.Errorf("audit entries for the refund = %d, want 1", auditEntries)
@@ -242,7 +242,7 @@ func TestPhase10SuccessCriteria(t *testing.T) {
 			"Subject: Your Tickets to Console Email Fest",
 			"Hi Bekzat,",
 			orderNumber,
-			"10000.00", // what they paid
+			"10350.00", // what they paid, fee included
 			"http://localhost:8080/api/v1/tickets/" + firstTicketID + "/pdf",
 		} {
 			if !strings.Contains(out, want) {

@@ -891,6 +891,50 @@ VALUES ('activation_fee_kzt', '"5000.00"'::jsonb,
 ON CONFLICT (key) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
+-- 12c. Support attachments (bonus, SRS 4.13)
+-- -----------------------------------------------------------------------------
+--
+-- An attendee reporting "my QR will not scan" is describing a picture. Columns
+-- rather than a separate table: a message carries at most one attachment, and
+-- a join table for a cardinality of one buys nothing.
+--
+-- The body is what a message is for, so it stays NOT NULL; a message that is
+-- only an attachment carries a caption written by the client.
+
+ALTER TABLE support_messages
+    ADD COLUMN IF NOT EXISTS attachment_url       text,
+    ADD COLUMN IF NOT EXISTS attachment_filename  text,
+    ADD COLUMN IF NOT EXISTS attachment_mime_type text,
+    ADD COLUMN IF NOT EXISTS attachment_bytes     bigint;
+
+DO $$
+BEGIN
+    -- All four columns describe one file, so either all are present or none
+    -- are. A half-populated attachment renders as a broken link, and the
+    -- database is the right place to make that impossible.
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'support_messages_attachment_chk'
+    ) THEN
+        ALTER TABLE support_messages ADD CONSTRAINT support_messages_attachment_chk CHECK (
+            (attachment_url IS NULL
+             AND attachment_filename IS NULL
+             AND attachment_mime_type IS NULL
+             AND attachment_bytes IS NULL)
+            OR
+            (attachment_url IS NOT NULL
+             AND attachment_filename IS NOT NULL
+             AND attachment_mime_type IS NOT NULL
+             AND attachment_bytes IS NOT NULL
+             AND attachment_bytes > 0)
+        );
+    END IF;
+END
+$$;
+
+COMMENT ON COLUMN support_messages.attachment_url IS
+    'Uploaded file backing this message; all four attachment columns move together.';
+
+-- -----------------------------------------------------------------------------
 -- 13. Documentation for the tables a reviewer opens first
 -- -----------------------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-# BiletFlow API — Phases 2 & 4-12
+# BiletFlow API — Phases 2 & 4-13
 
 Go REST API for account registration, JWT login, event CRUD, ticket types, a
 simulated KZT checkout, and printable QR tickets — backed by the Phase 1
@@ -146,6 +146,14 @@ Create Event saves `{{eventId}}`.
 | `GET` | `/uploads/{file}` | – | Serve an uploaded banner |
 | `GET` | `/api/v1/admin/search` | **Admin** | Users, events, orders, payments |
 | `GET` | `/api/v1/admin/reports/events.csv` | **Admin** | Operational report |
+| `POST` | `/api/v1/events/{id}/holds` | optional | Reserve a basket for 15 minutes |
+| `GET` | `/api/v1/orders/{id}/hold` | optional | Read a basket back |
+| `DELETE` | `/api/v1/orders/{id}/hold` | optional | Cancel a basket now |
+| `POST` | `/api/v1/orders/{id}/confirm` | optional | Pay for a held basket |
+| `GET` | `/api/v1/events/{id}/calendar.ics` | – | iCalendar export (id or slug) |
+| `GET` | `/api/v1/events/{id}/seats` | optional | Interactive seat map with live states |
+| `GET` | `/api/v1/events/{id}/roster` | Bearer | Hashed guest list for offline scanning |
+| `POST` | `/api/v1/events/{id}/check-in/sync` | Bearer | Reconcile admissions made offline |
 
 Listing filters: `limit` (1–100, default 20), `offset`, `category`, `q`,
 `starts_after`, `starts_before`. The organizer's own list, `GET /events/mine`,
@@ -977,3 +985,95 @@ the next download is meant to show what has changed since this one.
 A cancellation sends **one message per order**, not per ticket: somebody who
 bought four seats wants one email. An internal support note notifies nobody -
 that is the entire point of the checkbox.
+
+
+## Reservations, fees and calendars (Phase 13)
+
+### Buying a ticket has one implementation, not two
+
+`POST /checkout` used to hold the whole purchase. It is now composed:
+
+```go
+held, err := s.hold(ctx, tx, ...)     // reserve
+result, err := s.confirm(ctx, tx, ...) // sell
+```
+
+Both halves run in the caller's transaction, so a one-shot purchase is a hold
+that is paid for immediately - not a second copy of the inventory arithmetic
+that can drift from the first.
+
+### Reserved, then sold
+
+SRS 4.6 asks that "ticket inventory shall be temporarily reserved during
+checkout". A basket increments `quantity_reserved`; confirming moves the count
+to `quantity_sold` in a single statement:
+
+```sql
+UPDATE ticket_types
+   SET quantity_reserved = GREATEST(quantity_reserved - $2::int, 0),
+       quantity_sold     = quantity_sold + $2::int
+ WHERE id = $1
+```
+
+Both counters move together, so `quantity_sold + quantity_reserved` never
+changes mid-conversion and `ticket_types_inventory_chk` cannot be tripped
+halfway through.
+
+### Three ways a basket is released
+
+| When | How |
+| --- | --- |
+| The attendee cancels | `DELETE /orders/{id}/hold` |
+| Somebody else shops that event | swept inside the next `hold` transaction |
+| Nobody comes back | a background sweeper, once a minute |
+
+The second is what makes correctness independent of the timer: a stale basket
+can never be the reason a real sale is refused, even with the sweeper wedged.
+
+Reading an expired basket releases it too - and does so in **its own committed
+transaction**. Every path out of that branch returns an error, and an error
+rolls the transaction back, so a release written inline would be quietly
+undone. That was not hypothetical: it showed up as a smoke check that passed on
+the second run and failed on the first.
+
+### The processing charge
+
+```sql
+CASE WHEN subtotal_kzt - discount_kzt > 0
+     THEN round((subtotal_kzt - discount_kzt) * $2::numeric / 100 + $3::numeric, 2)
+     ELSE 0 END
+```
+
+Evaluated by PostgreSQL, never in Go - a percentage of a price is exactly the
+arithmetic float64 gets wrong. Charged on the **discounted** subtotal, because
+a fee is taken on what actually moves. Zero when nothing does, which is SRS
+3.3's "free events: no platform fee".
+
+The fee is added to the attendee's total and never reaches the organizer: the
+organizer's proceeds are the ticket price, and the charge for moving the money
+is not theirs to keep. **Every historical total in this repo moved by 3.5% when
+this landed** - Phase 4's "10 000 KZT" order is now 10 350. Set
+`PROCESSING_FEE_PERCENT=0` to restore the old figures.
+
+### Unicode tickets
+
+`AddUTF8FontFromBytes` with an embedded DejaVu Sans Condensed, so the font
+travels inside the binary and inside the PDF. Two consequences worth knowing:
+
+- fpdf writes UTF-8 text as **UTF-16BE literal strings**, so the test
+  extractor decodes that rather than grepping ASCII;
+- `truncate` counts runes. A byte-based cut would slice a two-byte Cyrillic
+  letter in half and put a replacement character on somebody's ticket.
+
+### Calendar files
+
+RFC 5545 by hand: one VEVENT, CRLF throughout (Outlook rejects bare newlines),
+commas and semicolons escaped (an unescaped comma in a venue name silently
+splits the property and the address vanishes), and lines folded at 75 octets
+**without splitting a multi-byte character**.
+
+`DTSTART;TZID=Asia/Almaty` with a VTIMEZONE block, not UTC: an attendee who
+travels should still see the event at the hour it happens at the venue. The UID
+is the event id, so re-downloading replaces the entry; a cancelled event that
+was once published stays downloadable, because refusing it would leave a stale
+entry in somebody's calendar with no way to correct it.

@@ -39,9 +39,12 @@ type TicketType struct {
 	SalesEndAt        *time.Time `json:"sales_end_at,omitempty"`
 	IsHidden          bool       `json:"is_hidden"`
 	IsFree            bool       `json:"is_free"`
-	DisplayOrder      int        `json:"display_order"`
-	CreatedAt         time.Time  `json:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at"`
+	// PriceCategory ties this tier to a venue section of the same category, so
+	// a seat on the map knows what it costs (SRS 4.3.1).
+	PriceCategory *string   `json:"price_category,omitempty"`
+	DisplayOrder  int       `json:"display_order"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 // OnSaleAt reports whether the type may be bought at the given moment.
@@ -81,7 +84,7 @@ const ticketTypeColumns = `id, event_id, name, description, price_kzt::text,
 	  WHERE t.ticket_type_id = ticket_types.id
 	    AND t.status = 'checked_in') AS quantity_checked_in,
 	max_per_order, sales_start_at, sales_end_at, is_hidden, is_free,
-	display_order, created_at, updated_at`
+	price_category, display_order, created_at, updated_at`
 
 func scanTicketType(row pgx.Row) (TicketType, error) {
 	var t TicketType
@@ -89,7 +92,8 @@ func scanTicketType(row pgx.Row) (TicketType, error) {
 		&t.QuantityTotal, &t.QuantitySold, &t.QuantityReserved, &t.QuantityRefunded,
 		&t.QuantityRemaining, &t.QuantityCheckedIn,
 		&t.MaxPerOrder, &t.SalesStartAt, &t.SalesEndAt,
-		&t.IsHidden, &t.IsFree, &t.DisplayOrder, &t.CreatedAt, &t.UpdatedAt)
+		&t.IsHidden, &t.IsFree, &t.PriceCategory, &t.DisplayOrder,
+		&t.CreatedAt, &t.UpdatedAt)
 	return t, err
 }
 
@@ -104,6 +108,7 @@ type CreateTicketTypeParams struct {
 	SalesStartAt  *time.Time
 	SalesEndAt    *time.Time
 	IsHidden      bool
+	PriceCategory *string
 	DisplayOrder  int
 }
 
@@ -112,11 +117,13 @@ func (s *TicketTypeStore) Create(ctx context.Context, p CreateTicketTypeParams) 
 	t, err := scanTicketType(s.pool.QueryRow(ctx, `
 		INSERT INTO ticket_types (
 			event_id, name, description, price_kzt, quantity_total,
-			max_per_order, sales_start_at, sales_end_at, is_hidden, display_order)
-		VALUES ($1, $2, $3, $4::numeric, $5, $6, $7, $8, $9, $10)
+			max_per_order, sales_start_at, sales_end_at, is_hidden,
+			price_category, display_order)
+		VALUES ($1, $2, $3, $4::numeric, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING `+ticketTypeColumns,
 		p.EventID, p.Name, p.Description, p.PriceKZT, p.QuantityTotal,
-		p.MaxPerOrder, p.SalesStartAt, p.SalesEndAt, p.IsHidden, p.DisplayOrder))
+		p.MaxPerOrder, p.SalesStartAt, p.SalesEndAt, p.IsHidden,
+		p.PriceCategory, p.DisplayOrder))
 	if err != nil {
 		return TicketType{}, mapTicketTypeError(err)
 	}
@@ -169,6 +176,7 @@ type UpdateTicketTypeParams struct {
 	PriceKZT      Optional[string]
 	QuantityTotal Optional[int]
 	MaxPerOrder   Optional[int]
+	PriceCategory Optional[string]
 	SalesStartAt  Optional[time.Time]
 	SalesEndAt    Optional[time.Time]
 	IsHidden      Optional[bool]
@@ -196,6 +204,7 @@ func (s *TicketTypeStore) Update(ctx context.Context, id uuid.UUID, p UpdateTick
 	set("description", p.Description.Set, p.Description.Ptr())
 	set("quantity_total", p.QuantityTotal.Set, p.QuantityTotal.Ptr())
 	set("max_per_order", p.MaxPerOrder.Set, p.MaxPerOrder.Ptr())
+	set("price_category", p.PriceCategory.Set, p.PriceCategory.Ptr())
 	set("sales_start_at", p.SalesStartAt.Set, p.SalesStartAt.Ptr())
 	set("sales_end_at", p.SalesEndAt.Set, p.SalesEndAt.Ptr())
 	set("is_hidden", p.IsHidden.Set, p.IsHidden.Ptr())

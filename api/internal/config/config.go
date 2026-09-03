@@ -28,13 +28,20 @@ type Config struct {
 	// UploadDir is where event banners are written. Local disk stands in for
 	// object storage in this MVP; the handler and the static route are the
 	// only two places that would change.
-	UploadDir      string
-	AccessTokenTTL time.Duration
-	BcryptCost     int
-	ReadTimeout    time.Duration
-	WriteTimeout   time.Duration
-	IdleTimeout    time.Duration
-	ShutdownGrace  time.Duration
+	UploadDir string
+	// ProcessingFeePercent and ProcessingFeeFixedKZT are the payment-processing
+	// charge (SRS 3.3), as decimal strings so the rate never passes through a
+	// float. SRS 3.3 leaves the amount "to be determined"; 3.5% is a plausible
+	// card rate for the region and is what an unconfigured deployment charges.
+	// Set PROCESSING_FEE_PERCENT=0 to switch the charge off entirely.
+	ProcessingFeePercent  string
+	ProcessingFeeFixedKZT string
+	AccessTokenTTL        time.Duration
+	BcryptCost            int
+	ReadTimeout           time.Duration
+	WriteTimeout          time.Duration
+	IdleTimeout           time.Duration
+	ShutdownGrace         time.Duration
 }
 
 // devSecret is used only when BILETFLOW_ENV is not "production". Production
@@ -73,6 +80,9 @@ func Load() (Config, error) {
 		envString("API_BASE_URL", "http://localhost:8080"), "/")
 
 	cfg.UploadDir = envString("UPLOAD_DIR", "./data/uploads")
+
+	cfg.ProcessingFeePercent = envString("PROCESSING_FEE_PERCENT", "3.5")
+	cfg.ProcessingFeeFixedKZT = envString("PROCESSING_FEE_FIXED_KZT", "0")
 
 	cfg.DatabaseURL = envString("DATABASE_URL",
 		"postgres://biletflow:biletflow_dev_password@localhost:5433/biletflow?sslmode=disable")

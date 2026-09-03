@@ -5,8 +5,10 @@ import type {
   AuthResponse,
   CheckInStats,
   CheckInSuccess,
+  Roster,
   ScanErrorCode,
   ScannableEvent,
+  SyncSummary,
   User,
 } from "./types";
 
@@ -198,5 +200,31 @@ export const api = {
       { method: "POST", body: { reason } },
     );
     return data.stats;
+  },
+
+  /**
+   * Download the hashed guest list so the door can work without a network
+   * (SRS 4.8). Returns admission hashes, never plaintext tokens.
+   */
+  async roster(eventID: string): Promise<Roster> {
+    const data = await request<{ roster: Roster }>(`/events/${eventID}/roster`);
+    return data.roster;
+  },
+
+  /**
+   * Reconcile the admissions the device recorded while offline (SRS 4.8).
+   *
+   * Each entry is judged independently by the server and reported on
+   * separately: one ticket refunded while the door was offline must not throw
+   * away the good admissions queued behind it.
+   */
+  async syncCheckIns(
+    eventID: string,
+    checkIns: { ticket_id: string; scanned_at: string; device_label: string }[],
+  ): Promise<SyncSummary> {
+    return request<SyncSummary>(`/events/${eventID}/check-in/sync`, {
+      method: "POST",
+      body: { check_ins: checkIns },
+    });
   },
 };

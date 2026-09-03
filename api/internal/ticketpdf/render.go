@@ -72,7 +72,12 @@ func Render(t Ticket) ([]byte, error) {
 	// content stream is binary, and picking text out of it means pattern
 	// matching over bytes that change with every random ticket id.
 	pdf.SetCompression(compressOutput)
-	pdf.SetTitle(pdfSafe("BiletFlow ticket "+t.TicketCode), true)
+
+	// Embedded before anything is drawn: every SetFont below names this
+	// family, so no text can reach the page through a core cp1252 font.
+	registerFonts(pdf)
+
+	pdf.SetTitle("BiletFlow ticket "+t.TicketCode, true)
 	pdf.SetAuthor("BiletFlow", true)
 	pdf.SetCreator("BiletFlow", true)
 	pdf.SetMargins(margin, margin, margin)
@@ -98,11 +103,11 @@ func drawHeader(pdf *fpdf.Fpdf) {
 	pdf.Rect(0, 0, pageWidth, 26, "F")
 
 	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Helvetica", "B", 18)
+	pdf.SetFont(bodyFont, "B", 18)
 	pdf.SetXY(margin, 7)
 	pdf.CellFormat(contentW/2, 12, "BiletFlow", "", 0, "L", false, 0, "")
 
-	pdf.SetFont("Helvetica", "", 11)
+	pdf.SetFont(bodyFont, "", 11)
 	pdf.SetXY(margin+contentW/2, 7)
 	pdf.CellFormat(contentW/2, 12, "ADMISSION TICKET", "", 0, "R", false, 0, "")
 
@@ -114,10 +119,10 @@ func drawEvent(pdf *fpdf.Fpdf, t Ticket) float64 {
 
 	label(pdf, margin, y, "EVENT")
 
-	pdf.SetFont("Helvetica", "B", 22)
+	pdf.SetFont(bodyFont, "B", 22)
 	pdf.SetXY(margin, y+5)
 	// MultiCell wraps a long title onto a second line instead of clipping it.
-	pdf.MultiCell(contentW, 9, pdfSafe(truncate(t.EventTitle, 80)), "", "L", false)
+	pdf.MultiCell(contentW, 9, truncate(t.EventTitle, 80), "", "L", false)
 
 	return pdf.GetY() + 6
 }
@@ -178,15 +183,15 @@ func row(pdf *fpdf.Fpdf, y, col float64, left, right field) float64 {
 
 		label(pdf, x, y, f.label)
 
-		pdf.SetFont("Helvetica", "B", 13)
+		pdf.SetFont(bodyFont, "B", 13)
 		pdf.SetXY(x, y+4.5)
-		pdf.CellFormat(col-4, 6, pdfSafe(truncate(f.value, 34)), "", 0, "L", false, 0, "")
+		pdf.CellFormat(col-4, 6, truncate(f.value, 34), "", 0, "L", false, 0, "")
 
 		if f.secondary != "" {
-			pdf.SetFont("Helvetica", "", 9)
+			pdf.SetFont(bodyFont, "", 9)
 			pdf.SetTextColor(90, 90, 90)
 			pdf.SetXY(x, y+11)
-			pdf.CellFormat(col-4, 5, pdfSafe(truncate(f.secondary, 48)), "", 0, "L", false, 0, "")
+			pdf.CellFormat(col-4, 5, truncate(f.secondary, 48), "", 0, "L", false, 0, "")
 			pdf.SetTextColor(0, 0, 0)
 		}
 	}
@@ -211,13 +216,13 @@ func drawQR(pdf *fpdf.Fpdf, t Ticket, qr []byte, y float64) float64 {
 
 	tokenY := y + qrSizeMM + 5
 
-	pdf.SetFont("Helvetica", "", 8)
+	pdf.SetFont(bodyFont, "", 8)
 	pdf.SetTextColor(90, 90, 90)
 	pdf.SetXY(margin, tokenY)
 	pdf.CellFormat(contentW, 4, "Present this code at the entrance", "", 0, "C", false, 0, "")
 
 	// The token in text as well: if a scanner fails, staff can key it in.
-	pdf.SetFont("Courier", "", 10)
+	pdf.SetFont(bodyFont, "", 10)
 	pdf.SetTextColor(0, 0, 0)
 	pdf.SetXY(margin, tokenY+5)
 	pdf.CellFormat(contentW, 5, t.QRToken, "", 0, "C", false, 0, "")
@@ -241,7 +246,7 @@ func drawFooter(pdf *fpdf.Fpdf) {
 	pdf.SetDrawColor(200, 200, 200)
 	pdf.Line(margin, pageHeight-24, pageWidth-margin, pageHeight-24)
 
-	pdf.SetFont("Helvetica", "", 8)
+	pdf.SetFont(bodyFont, "", 8)
 	pdf.SetTextColor(110, 110, 110)
 	pdf.SetXY(margin, pageHeight-20)
 	pdf.MultiCell(contentW, 4,
@@ -254,7 +259,7 @@ func drawFooter(pdf *fpdf.Fpdf) {
 
 // label draws a small uppercase caption above a value.
 func label(pdf *fpdf.Fpdf, x, y float64, text string) {
-	pdf.SetFont("Helvetica", "", 7.5)
+	pdf.SetFont(bodyFont, "", 7.5)
 	pdf.SetTextColor(120, 120, 120)
 	pdf.SetXY(x, y)
 	pdf.CellFormat(80, 4, text, "", 0, "L", false, 0, "")

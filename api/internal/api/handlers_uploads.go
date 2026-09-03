@@ -3,11 +3,21 @@ package api
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"image"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	// Register the image decoders so image.DecodeConfig can read the
+	// dimensions of every format the uploader accepts. Blank imports: they are
+	// used for their registration side effect, not their exported names.
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+
+	_ "golang.org/x/image/webp"
 
 	"github.com/biletflow/api/internal/httpx"
 )
@@ -17,7 +27,19 @@ import (
 const (
 	maxUploadBytes = 5 << 20
 	uploadFormKey  = "file"
+
+	// Image dimension bounds. Small enough at the bottom that a favicon or a
+	// stray icon is refused as a banner, large enough at the top for a real
+	// poster, and the megapixel cap refuses a "decompression bomb" - a small
+	// file that expands to gigabytes of pixels in memory - even when its width
+	// and height are individually within range.
+	minImageDimension = 200
+	maxImageDimension = 6000
+	maxImagePixels    = 40_000_000
 )
+
+// CodeBadImageDimensions lets the UI explain a dimension failure precisely.
+const CodeBadImageDimensions = "invalid_image_dimensions"
 
 // CodeUploadTooLarge and CodeUnsupportedMedia let the UI say which rule was
 // broken rather than "upload failed".
@@ -26,17 +48,21 @@ const (
 	CodeUnsupportedMedia = "unsupported_media_type"
 )
 
-// allowedImageTypes maps a sniffed content type to the extension it is stored
+// allowedUploadTypes maps a sniffed content type to the extension it is stored
 // under.
+//
+// Images for event banners (SRS 4.2), plus PDF because a support attachment is
+// as often a receipt or a printed ticket as a screenshot (SRS 4.13).
 //
 // The type is detected from the file's own first bytes, not from the
 // Content-Type header or the filename, because both are supplied by the client
 // and neither is evidence of anything.
-var allowedImageTypes = map[string]string{
-	"image/jpeg": ".jpg",
-	"image/png":  ".png",
-	"image/gif":  ".gif",
-	"image/webp": ".webp",
+var allowedUploadTypes = map[string]string{
+	"image/jpeg":      ".jpg",
+	"image/png":       ".png",
+	"image/gif":       ".gif",
+	"image/webp":      ".webp",
+	"application/pdf": ".pdf",
 }
 
 type uploadResponse struct {
@@ -92,16 +118,30 @@ func (s *Server) handleUploadImage(w http.ResponseWriter, r *http.Request) {
 	sniff = sniff[:n]
 
 	mimeType := http.DetectContentType(sniff)
-	extension, ok := allowedImageTypes[mimeType]
+	extension, ok := allowedUploadTypes[mimeType]
 	if !ok {
 		httpx.WriteError(w, http.StatusUnsupportedMediaType, CodeUnsupportedMedia,
-			"Upload a JPEG, PNG, GIF or WebP image.")
+			"Upload a JPEG, PNG, GIF or WebP image, or a PDF.")
 		return
 	}
 
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
 		httpx.WriteInternalError(w, r, err)
 		return
+	}
+
+	// A PDF has no pixel dimensions; every image type does, and an image that is
+	// too small, too large, or a decompression bomb is refused here rather than
+	// stored and served as a broken banner (SRS 4.2).
+	if mimeType != "application/pdf" {
+		if msg := checkImageDimensions(file); msg != "" {
+			httpx.WriteError(w, http.StatusUnprocessableEntity, CodeBadImageDimensions, msg)
+			return
+		}
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			httpx.WriteInternalError(w, r, err)
+			return
+		}
 	}
 
 	if err := os.MkdirAll(s.cfg.UploadDir, 0o755); err != nil {
@@ -141,6 +181,27 @@ func (s *Server) handleUploadImage(w http.ResponseWriter, r *http.Request) {
 		Bytes:    written,
 		MimeType: mimeType,
 	})
+}
+
+// checkImageDimensions reads only the image header (not the whole file) and
+// returns a human message when the dimensions are out of bounds, or "" when
+// they are acceptable. It leaves the reader wherever DecodeConfig stopped; the
+// caller re-seeks before storing.
+func checkImageDimensions(r io.Reader) string {
+	cfg, _, err := image.DecodeConfig(r)
+	if err != nil {
+		return "That image could not be read. Upload a valid JPEG, PNG, GIF or WebP."
+	}
+	if cfg.Width < minImageDimension || cfg.Height < minImageDimension {
+		return "That image is too small. It must be at least 200×200 pixels."
+	}
+	if cfg.Width > maxImageDimension || cfg.Height > maxImageDimension {
+		return "That image is too large. Each side must be at most 6000 pixels."
+	}
+	if cfg.Width*cfg.Height > maxImagePixels {
+		return "That image has too many pixels. Keep it under 40 megapixels."
+	}
+	return ""
 }
 
 // uploadURLPrefix is where stored files are served from.

@@ -125,8 +125,8 @@ func TestPhase7SuccessCriteria(t *testing.T) {
 
 	order, _ := bought.Body["order"].(map[string]any)
 	if order["subtotal_kzt"] != "10000.00" || order["discount_kzt"] != "2000.00" ||
-		order["total_kzt"] != "8000.00" {
-		t.Fatalf("criterion 3: order totals = %v/%v/%v, want 10000.00/2000.00/8000.00",
+		order["total_kzt"] != "8280.00" {
+		t.Fatalf("criterion 3: order totals = %v/%v/%v, want 10000.00/2000.00/8280.00 (8000 plus the 3.5 percent fee)",
 			order["subtotal_kzt"], order["discount_kzt"], order["total_kzt"])
 	}
 
@@ -152,8 +152,8 @@ func TestPhase7SuccessCriteria(t *testing.T) {
 	if redemptions != 1 {
 		t.Errorf("criterion 3: %d promo_redemptions rows, want 1", redemptions)
 	}
-	if dbDiscount != "2000.00" || dbTotal != "8000.00" {
-		t.Errorf("criterion 3: db order = %s discount / %s total, want 2000.00 / 8000.00",
+	if dbDiscount != "2000.00" || dbTotal != "8280.00" {
+		t.Errorf("criterion 3: db order = %s discount / %s total, want 2000.00 / 8280.00",
 			dbDiscount, dbTotal)
 	}
 	t.Logf("criterion 3 OK: redemption_count = %d, order stored at %s KZT", dbCount, dbTotal)
@@ -270,8 +270,8 @@ func TestFixedAmountDiscount(t *testing.T) {
 	requireStatus(t, res, http.StatusCreated)
 
 	order, _ := res.Body["order"].(map[string]any)
-	if order["discount_kzt"] != "1500.00" || order["total_kzt"] != "8500.00" {
-		t.Errorf("order = %v discount / %v total, want 1500.00 / 8500.00",
+	if order["discount_kzt"] != "1500.00" || order["total_kzt"] != "8797.50" {
+		t.Errorf("order = %v discount / %v total, want 1500.00 / 8797.50 (8500 plus the 3.5 percent fee)",
 			order["discount_kzt"], order["total_kzt"])
 	}
 }
@@ -397,8 +397,8 @@ func TestPromoRestrictedToTicketTypes(t *testing.T) {
 
 	order, _ := mixed.Body["order"].(map[string]any)
 	if order["subtotal_kzt"] != "15000.00" || order["discount_kzt"] != "1000.00" ||
-		order["total_kzt"] != "14000.00" {
-		t.Errorf("order = %v/%v/%v, want 15000.00/1000.00/14000.00",
+		order["total_kzt"] != "14490.00" {
+		t.Errorf("order = %v/%v/%v, want 15000.00/1000.00/14490.00 (14000 plus the 3.5 percent fee)",
 			order["subtotal_kzt"], order["discount_kzt"], order["total_kzt"])
 	}
 }
@@ -610,8 +610,8 @@ func TestCampaignReportingFigures(t *testing.T) {
 		t.Errorf("tickets_sold = %v, want 3", view["tickets_sold"])
 	}
 	// 9000 + 4500 = 13500 gross, 1000 + 500 = 1500 discount.
-	if view["gross_revenue_kzt"] != "13500.00" {
-		t.Errorf("gross_revenue_kzt = %v, want 13500.00", view["gross_revenue_kzt"])
+	if view["gross_revenue_kzt"] != "13972.50" {
+		t.Errorf("gross_revenue_kzt = %v, want 13972.50 (13500 plus the 3.5 percent fee)", view["gross_revenue_kzt"])
 	}
 	if view["discount_given_kzt"] != "1500.00" {
 		t.Errorf("discount_given_kzt = %v, want 1500.00", view["discount_given_kzt"])

@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/biletflow/api/internal/httpx"
@@ -48,12 +49,10 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	fullName := nameFromEmail(email)
 	if req.FullName != nil {
-		if blank(*req.FullName) {
-			errs.add("full_name", "Full name must not be blank.")
-		} else if len(*req.FullName) > maxNameLength {
-			errs.add("full_name", "Full name is too long.")
+		if msg := validateLine("Full name", *req.FullName, minNameLength, maxNameLength); msg != "" {
+			errs.add("full_name", msg)
 		} else {
-			fullName = *req.FullName
+			fullName = strings.TrimSpace(*req.FullName)
 		}
 	}
 

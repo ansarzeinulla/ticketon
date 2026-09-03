@@ -92,8 +92,13 @@ func TestPhase4SuccessCriteria(t *testing.T) {
 	if order["status"] != "paid" {
 		t.Errorf("criterion 3: order status = %v, want paid", order["status"])
 	}
-	if order["total_kzt"] != "10000.00" {
-		t.Errorf("criterion 3: total_kzt = %v, want 10000.00", order["total_kzt"])
+	// 2 x 5000 = 10000, plus the 3.5 percent processing charge SRS 3.3 adds
+	// to each transaction.
+	if order["total_kzt"] != "10350.00" {
+		t.Errorf("criterion 3: total_kzt = %v, want 10350.00", order["total_kzt"])
+	}
+	if order["processing_fee_kzt"] != "350.00" {
+		t.Errorf("criterion 3: processing_fee_kzt = %v, want 350.00", order["processing_fee_kzt"])
 	}
 	if order["currency"] != "KZT" {
 		t.Errorf("criterion 3: currency = %v, want KZT", order["currency"])
@@ -113,8 +118,8 @@ func TestPhase4SuccessCriteria(t *testing.T) {
 	if err != nil {
 		t.Fatalf("criterion 3: order not in the database: %v", err)
 	}
-	if dbStatus != "paid" || dbTotal != "10000.00" || dbCurrency != "KZT" || !dbSimulated {
-		t.Fatalf("criterion 3: db order = (%s, %s, %s, simulated=%v), want (paid, 10000.00, KZT, true)",
+	if dbStatus != "paid" || dbTotal != "10350.00" || dbCurrency != "KZT" || !dbSimulated {
+		t.Fatalf("criterion 3: db order = (%s, %s, %s, simulated=%v), want (paid, 10350.00, KZT, true)",
 			dbStatus, dbTotal, dbCurrency, dbSimulated)
 	}
 	t.Logf("criterion 3 OK: order %s is %s for %s KZT (simulated)", order["order_number"], dbStatus, dbTotal)
@@ -480,8 +485,8 @@ func TestGetOrderAfterCheckout(t *testing.T) {
 	requireStatus(t, res, http.StatusOK)
 
 	order, _ := res.Body["order"].(map[string]any)
-	if order["status"] != "paid" || order["total_kzt"] != "10000.00" {
-		t.Errorf("order = %v, want a paid 10000.00 order", order)
+	if order["status"] != "paid" || order["total_kzt"] != "10350.00" {
+		t.Errorf("order = %v, want a paid 10350.00 order", order)
 	}
 	if tickets, _ := res.Body["tickets"].([]any); len(tickets) != 2 {
 		t.Errorf("%d tickets on the fetched order, want 2", len(tickets))

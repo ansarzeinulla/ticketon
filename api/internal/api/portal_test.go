@@ -157,9 +157,9 @@ func TestAdminReportIsValidCSV(t *testing.T) {
 		"tickets_sold":  "3",
 		"checked_in":    "1",
 		"orders":        "2",
-		"gross_kzt":     "20000.00",
-		"refunded_kzt":  "5000.00",
-		"net_kzt":       "15000.00",
+		"gross_kzt":     "20700.00",
+		"refunded_kzt":  "5175.00",
+		"net_kzt":       "15525.00",
 		"discounts_kzt": "0.00",
 		"lifecycle":     "upcoming",
 	} {
@@ -461,4 +461,120 @@ func TestSupportReplyNotifiesTheOtherSide(t *testing.T) {
 	if got := len(c.mail.To(buyer.Email)); got != 0 {
 		t.Errorf("an internal note sent %d email(s) to the attendee", got)
 	}
+}
+
+// --- support attachments (bonus, SRS 4.13) -----------------------------------
+
+// TestSupportMessageCarriesAnAttachment covers the whole flow: upload, attach,
+// and read it back on the thread.
+func TestSupportMessageCarriesAnAttachment(t *testing.T) {
+	c := newClient(t)
+	organizer := c.register("attachorganizer")
+	eventID, _, ticketTypeID := c.sellableEvent(organizer.Token, "Attachment Fest", "5000", 10)
+
+	buyer := c.register("attachbuyer")
+	orderID := c.buyAsRegisteredAttendee(buyer.Token, eventID, ticketTypeID, buyer.Email)
+
+	opened := c.post("/api/v1/support/cases", buyer.Token, map[string]any{
+		"order_id": orderID, "category": "ticket_delivery",
+		"subject": "My QR will not scan", "message": "My QR will not scan.",
+	})
+	requireStatus(t, opened, http.StatusCreated)
+	caseID := opened.Body["case"].(map[string]any)["id"].(string)
+
+	// The attendee uploads a screenshot of the problem.
+	uploaded := c.uploadImage(buyer.Token, "screenshot.png", pngBytes())
+	requireStatus(t, uploaded, http.StatusCreated)
+
+	posted := c.post("/api/v1/support/cases/"+caseID+"/messages", buyer.Token, map[string]any{
+		"message": "Here is what my phone shows.",
+		"attachment": map[string]any{
+			"url":       uploaded.Body["url"],
+			"filename":  "screenshot.png",
+			"mime_type": uploaded.Body["mime_type"],
+			"bytes":     uploaded.Body["bytes"],
+		},
+	})
+	requireStatus(t, posted, http.StatusCreated)
+
+	messages := posted.Body["messages"].([]any)
+	last := messages[len(messages)-1].(map[string]any)
+	attachment, ok := last["attachment"].(map[string]any)
+	if !ok {
+		t.Fatalf("the message carries no attachment: %v", last)
+	}
+	if attachment["filename"] != "screenshot.png" || attachment["mime_type"] != "image/png" {
+		t.Errorf("attachment = %v", attachment)
+	}
+
+	// The organizer sees it on their side of the thread.
+	seen := c.get("/api/v1/support/cases/"+caseID, organizer.Token)
+	requireStatus(t, seen, http.StatusOK)
+
+	found := false
+	for _, m := range seen.Body["messages"].([]any) {
+		if a, ok := m.(map[string]any)["attachment"].(map[string]any); ok {
+			found = true
+			// And the file it points at is actually servable.
+			if res := c.getBinary(strings.TrimPrefix(a["url"].(string), c.api.cfg.APIBaseURL),
+				""); res.Status != http.StatusOK {
+				t.Errorf("the attachment URL returned %d", res.Status)
+			}
+		}
+	}
+	if !found {
+		t.Error("the organizer's copy of the thread has no attachment")
+	}
+}
+
+// TestSupportAttachmentMustBeOneOfOurUploads: a support thread must not become
+// a way to make BiletFlow render a link to any address somebody chooses.
+func TestSupportAttachmentMustBeOneOfOurUploads(t *testing.T) {
+	c := newClient(t)
+	organizer := c.register("attachforgery")
+	eventID, _, ticketTypeID := c.sellableEvent(organizer.Token, "Forgery Fest", "5000", 10)
+
+	buyer := c.register("attachforger")
+	orderID := c.buyAsRegisteredAttendee(buyer.Token, eventID, ticketTypeID, buyer.Email)
+
+	opened := c.post("/api/v1/support/cases", buyer.Token, map[string]any{
+		"order_id": orderID, "category": "technical",
+		"subject": "A question", "message": "A question.",
+	})
+	requireStatus(t, opened, http.StatusCreated)
+	caseID := opened.Body["case"].(map[string]any)["id"].(string)
+
+	for _, hostile := range []string{
+		"https://evil.example/invoice.pdf",
+		c.api.cfg.APIBaseURL + "/uploads/../../etc/passwd",
+		"",
+	} {
+		res := c.post("/api/v1/support/cases/"+caseID+"/messages", buyer.Token, map[string]any{
+			"message": "See attached.",
+			"attachment": map[string]any{
+				"url": hostile, "filename": "x.pdf",
+				"mime_type": "application/pdf", "bytes": 10,
+			},
+		})
+		if hostile == "" {
+			// An empty URL is simply no attachment, which is fine.
+			requireStatus(t, res, http.StatusCreated)
+			continue
+		}
+		if res.Status == http.StatusCreated {
+			t.Errorf("a message accepted the foreign URL %q", hostile)
+		}
+	}
+
+	// A URL shaped like ours but pointing at a file that was never stored is
+	// refused too - a broken paperclip helps nobody.
+	requireStatus(t, c.post("/api/v1/support/cases/"+caseID+"/messages", buyer.Token,
+		map[string]any{
+			"message": "See attached.",
+			"attachment": map[string]any{
+				"url":       c.api.cfg.APIBaseURL + "/uploads/deadbeefdeadbeefdeadbeefdeadbeef.png",
+				"filename":  "ghost.png",
+				"mime_type": "image/png", "bytes": 10,
+			},
+		}), http.StatusUnprocessableEntity)
 }

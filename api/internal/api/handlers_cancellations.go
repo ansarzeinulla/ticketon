@@ -53,7 +53,7 @@ func (s *Server) handleCancelOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if len(req.Reason) > maxReasonLength {
+	if runeLen(req.Reason) > maxReasonLength {
 		httpx.WriteError(w, http.StatusBadRequest, httpx.CodeValidationFailed,
 			"The reason is too long.")
 		return

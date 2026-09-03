@@ -5,9 +5,13 @@ import { notFound } from "next/navigation";
 import { OrderSupport } from "@/components/order-support";
 import { TicketCard } from "@/components/ticket-card";
 import { ApiError, api } from "@/lib/api";
+import { getTranslations } from "@/lib/i18n/server";
 import { formatKZT } from "@/lib/money";
 
-export const metadata: Metadata = { title: "Order confirmation" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslations();
+  return { title: t("order.metaTitle") };
+}
 
 /**
  * The order confirmation, at its own URL so it survives a refresh and can be
@@ -21,6 +25,7 @@ export default async function OrderConfirmationPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const { t } = await getTranslations();
 
   let data;
   try {
@@ -43,25 +48,26 @@ export default async function OrderConfirmationPage({
             ✓
           </span>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Order confirmed</h1>
+            <h1 className="text-xl font-semibold tracking-tight">{t("order.confirmed")}</h1>
             <p className="mt-1 text-sm text-foreground-muted">
-              {tickets.length} ticket{tickets.length === 1 ? "" : "s"} issued to{" "}
-              {order.buyer_email}.
+              {tickets.length === 1
+                ? t("order.issuedOne", { count: tickets.length, email: order.buyer_email })
+                : t("order.issuedMany", { count: tickets.length, email: order.buyer_email })}
             </p>
           </div>
         </div>
 
         <dl className="mt-6 grid gap-4 sm:grid-cols-2">
           <div>
-            <dt className="text-xs text-foreground-muted">Order number</dt>
+            <dt className="text-xs text-foreground-muted">{t("order.orderNumber")}</dt>
             <dd className="mt-0.5 font-mono text-sm font-medium">{order.order_number}</dd>
           </div>
           <div>
-            <dt className="text-xs text-foreground-muted">Order ID</dt>
+            <dt className="text-xs text-foreground-muted">{t("order.orderId")}</dt>
             <dd className="mt-0.5 break-all font-mono text-xs">{order.id}</dd>
           </div>
           <div>
-            <dt className="text-xs text-foreground-muted">Status</dt>
+            <dt className="text-xs text-foreground-muted">{t("order.status")}</dt>
             <dd className="mt-0.5">
               <span className="inline-flex rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-medium capitalize text-success">
                 {order.status}
@@ -69,7 +75,7 @@ export default async function OrderConfirmationPage({
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-foreground-muted">Total paid</dt>
+            <dt className="text-xs text-foreground-muted">{t("order.totalPaid")}</dt>
             <dd className="mt-0.5 text-sm font-semibold tabular-nums">
               {formatKZT(order.total_kzt)}
             </dd>
@@ -77,7 +83,7 @@ export default async function OrderConfirmationPage({
         </dl>
 
         <section className="mt-8">
-          <h2 className="text-sm font-semibold">Order summary</h2>
+          <h2 className="text-sm font-semibold">{t("order.summary")}</h2>
           <ul className="mt-2 divide-y divide-border-subtle rounded-lg border border-border-subtle">
             {items.map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-4 px-4 py-3">
@@ -96,10 +102,9 @@ export default async function OrderConfirmationPage({
         </section>
 
         <section className="mt-8">
-          <h2 className="text-sm font-semibold">Your tickets</h2>
+          <h2 className="text-sm font-semibold">{t("order.yourTickets")}</h2>
           <p className="mt-1 text-xs text-foreground-muted">
-            Show the QR code at the entrance, or download the A4 PDF to print.
-            Each ticket admits one person once.
+            {t("order.ticketsHint")}
           </p>
           <ul className="mt-3 space-y-3">
             {tickets.map((ticket) => (
@@ -111,14 +116,14 @@ export default async function OrderConfirmationPage({
         <OrderSupport orderID={order.id} buyerEmail={order.buyer_email} />
 
         <p className="mt-8 rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
-          This was a simulated payment. No card was charged and no money moved.
+          {t("order.simulatedNote")}
         </p>
 
         <Link
           href="/"
           className="mt-6 inline-flex rounded-lg border border-border-subtle px-4 py-2.5 text-sm font-medium hover:bg-surface-muted"
         >
-          Back to BiletFlow
+          {t("order.back")}
         </Link>
       </div>
     </main>

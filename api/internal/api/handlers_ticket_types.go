@@ -17,14 +17,15 @@ import (
 // them on the way in.
 var moneyPattern = regexp.MustCompile(`^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$`)
 
-const maxTicketTypeNameLength = 120
-
 type ticketTypeRequest struct {
-	Name          string     `json:"name"`
-	Description   *string    `json:"description"`
-	PriceKZT      *string    `json:"price_kzt"`
-	QuantityTotal *int       `json:"quantity_total"`
-	MaxPerOrder   *int       `json:"max_per_order"`
+	Name          string  `json:"name"`
+	Description   *string `json:"description"`
+	PriceKZT      *string `json:"price_kzt"`
+	QuantityTotal *int    `json:"quantity_total"`
+	MaxPerOrder   *int    `json:"max_per_order"`
+	// PriceCategory links this tier to the venue sections it prices, for an
+	// assigned-seating event (SRS 4.3.1).
+	PriceCategory *string    `json:"price_category"`
 	SalesStartAt  *time.Time `json:"sales_start_at"`
 	SalesEndAt    *time.Time `json:"sales_end_at"`
 	IsHidden      *bool      `json:"is_hidden"`
@@ -53,11 +54,11 @@ func (s *Server) handleCreateTicketType(w http.ResponseWriter, r *http.Request) 
 
 	errs := fieldErrors{}
 
-	if blank(req.Name) {
-		errs.add("name", "Name is required.")
-	} else if len(req.Name) > maxTicketTypeNameLength {
-		errs.add("name", "Name must not exceed 120 characters.")
+	if msg := validateLine("Name", req.Name, minTicketTypeNameLength, maxTicketTypeNameLength); msg != "" {
+		errs.add("name", msg)
 	}
+	checkOptionalMultiline(errs, "description", "Description", req.Description, maxDescriptionLength)
+	checkOptionalLine(errs, "price_category", "Price category", req.PriceCategory, maxCategoryLength)
 
 	// A free ticket type is simply one priced at zero (SRS 1.3).
 	price := "0"
@@ -100,6 +101,7 @@ func (s *Server) handleCreateTicketType(w http.ResponseWriter, r *http.Request) 
 		PriceKZT:      price,
 		QuantityTotal: *req.QuantityTotal,
 		MaxPerOrder:   maxPerOrder,
+		PriceCategory: req.PriceCategory,
 		SalesStartAt:  req.SalesStartAt,
 		SalesEndAt:    req.SalesEndAt,
 		IsHidden:      req.IsHidden != nil && *req.IsHidden,
@@ -159,9 +161,14 @@ func (s *Server) handleUpdateTicketType(w http.ResponseWriter, r *http.Request) 
 
 	errs := fieldErrors{}
 
-	if req.Name.Set && (!req.Name.Valid || blank(req.Name.Value)) {
-		errs.add("name", "Name must not be blank.")
+	if req.Name.Set {
+		if !req.Name.Valid || blank(req.Name.Value) {
+			errs.add("name", "Name must not be blank.")
+		} else if msg := validateLine("Name", req.Name.Value, minTicketTypeNameLength, maxTicketTypeNameLength); msg != "" {
+			errs.add("name", msg)
+		}
 	}
+	validateOptionalText(errs, "description", "Description", req.Description, maxDescriptionLength, true)
 	if req.PriceKZT.Set {
 		if !req.PriceKZT.Valid || !moneyPattern.MatchString(req.PriceKZT.Value) {
 			errs.add("price_kzt", "Price must be a non-negative amount in KZT.")

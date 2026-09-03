@@ -59,7 +59,7 @@ func (s *Server) setUserStatus(w http.ResponseWriter, r *http.Request, status st
 			return
 		}
 	}
-	if len(req.Reason) > maxReasonLength {
+	if runeLen(req.Reason) > maxReasonLength {
 		httpx.WriteError(w, http.StatusBadRequest, httpx.CodeValidationFailed,
 			"The reason is too long.")
 		return

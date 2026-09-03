@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/biletflow/api/internal/auth"
 	"github.com/biletflow/api/internal/config"
 )
 
@@ -94,8 +95,11 @@ func TestRegisterStoresOnlyAHash(t *testing.T) {
 	if !strings.HasPrefix(hash, "$2") {
 		t.Fatalf("password_hash = %q, want a bcrypt digest", hash)
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(acc.Password)); err != nil {
-		t.Errorf("the stored hash does not verify against the original password: %v", err)
+	// The stored hash is bcrypt over the pre-hashed password (which lifts the
+	// 72-byte limit), so it verifies through the hasher rather than a raw
+	// bcrypt compare against the plaintext.
+	if !auth.NewHasher(bcrypt.MinCost).Verify(hash, acc.Password) {
+		t.Error("the stored hash does not verify against the original password")
 	}
 
 	// The hash must never appear in an API response.
@@ -176,7 +180,7 @@ func TestRegisterValidation(t *testing.T) {
 		{"email without dot", map[string]any{"email": "user@localhost", "password": "correct horse battery"}, "email"},
 		{"missing password", map[string]any{"email": "a@b.kz"}, "password"},
 		{"short password", map[string]any{"email": "a@b.kz", "password": "short"}, "password"},
-		{"overlong password", map[string]any{"email": "a@b.kz", "password": strings.Repeat("x", 73)}, "password"},
+		{"overlong password", map[string]any{"email": "a@b.kz", "password": strings.Repeat("x", 129)}, "password"},
 		{"blank full name", map[string]any{"email": "a@b.kz", "password": "correct horse battery", "full_name": "   "}, "full_name"},
 		{"unknown locale", map[string]any{"email": "a@b.kz", "password": "correct horse battery", "locale": "fr"}, "locale"},
 	}

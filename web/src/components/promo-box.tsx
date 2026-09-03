@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 
 import { Button, Spinner } from "@/components/ui/button";
 import { ApiError, api } from "@/lib/api";
+import { useT } from "@/lib/i18n/context";
 import { formatKZT, formatTiyn, toTiyn } from "@/lib/money";
 import type { PromoPreview, TicketType } from "@/lib/types";
 
@@ -38,6 +39,7 @@ export function PromoBox({
   promo: PromoPreview | null;
   onChange: (next: PromoPreview | null) => void;
 }) {
+  const t = useT();
   const [code, setCode] = useState("");
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,13 +67,13 @@ export function PromoBox({
       } catch (cause) {
         onChange(null);
         setError(
-          cause instanceof ApiError ? cause.message : "That code could not be applied.",
+          cause instanceof ApiError ? cause.message : t("promo.couldNotApply"),
         );
       } finally {
         setChecking(false);
       }
     },
-    [eventID, onChange],
+    [eventID, onChange, t],
   );
 
   /**
@@ -116,7 +118,7 @@ export function PromoBox({
     if (!typed) return;
 
     if (basket.length === 0) {
-      setError("Choose your tickets first, then the discount can be calculated.");
+      setError(t("promo.chooseFirst"));
       return;
     }
 
@@ -144,34 +146,34 @@ export function PromoBox({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-success">
-              Promo code {promo.code} applied
+              {t("promo.applied", { code: promo.code })}
             </p>
             <p className="mt-0.5 text-xs text-success/80">
               {promo.campaign_name}
               {promo.discount_type === "percentage"
-                ? ` · ${Number(promo.discount_value)}% off`
-                : ` · ${formatKZT(promo.discount_value)} off`}
-              {!promo.applies_to_all && " · applies to selected ticket types only"}
+                ? ` · ${t("promo.percentOff", { value: Number(promo.discount_value) })}`
+                : ` · ${t("promo.amountOff", { amount: formatKZT(promo.discount_value) })}`}
+              {!promo.applies_to_all && ` · ${t("promo.selectedOnly")}`}
             </p>
           </div>
           <Button size="sm" variant="secondary" onClick={clear}>
-            Remove
+            {t("promo.remove")}
           </Button>
         </div>
 
         <dl className="mt-4 space-y-1.5 text-sm">
           <div className="flex justify-between">
-            <dt className="text-success/80">Subtotal</dt>
+            <dt className="text-success/80">{t("promo.subtotal")}</dt>
             <dd className="tabular-nums text-success/80">{formatKZT(promo.subtotal_kzt)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-success/80">Discount</dt>
+            <dt className="text-success/80">{t("promo.discount")}</dt>
             <dd className="tabular-nums font-medium text-success" data-testid="promo-discount">
               −{formatTiyn(discountTiyn)}
             </dd>
           </div>
           <div className="flex justify-between border-t border-success/30 pt-1.5">
-            <dt className="font-semibold text-success">New total</dt>
+            <dt className="font-semibold text-success">{t("promo.newTotal")}</dt>
             <dd
               className="text-base font-bold tabular-nums text-success"
               data-testid="promo-total"
@@ -190,7 +192,7 @@ export function PromoBox({
       className="rounded-xl border border-border-subtle bg-surface p-5"
     >
       <label htmlFor="promo-code" className="text-sm font-medium">
-        Have a promo code?
+        {t("promo.haveCode")}
       </label>
 
       <div className="mt-2 flex gap-2">
@@ -211,7 +213,7 @@ export function PromoBox({
           data-testid="promo-input"
         />
         <Button type="submit" variant="secondary" disabled={checking || !code.trim()}>
-          {checking ? <Spinner /> : "Apply"}
+          {checking ? <Spinner /> : t("promo.apply")}
         </Button>
       </div>
 
@@ -221,7 +223,7 @@ export function PromoBox({
         </p>
       )}
       {checking && !error && (
-        <p className="mt-2 text-xs text-foreground-muted">Checking the code…</p>
+        <p className="mt-2 text-xs text-foreground-muted">{t("promo.checking")}</p>
       )}
     </form>
   );

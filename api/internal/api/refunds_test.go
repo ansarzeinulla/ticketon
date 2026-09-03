@@ -164,8 +164,8 @@ func TestRefundShowsInAnalyticsAndTimeline(t *testing.T) {
 	}
 	// The revenue still counts: the sale happened, and a refund is a separate
 	// event rather than a rewrite of history.
-	if figures["gross_revenue_kzt"] != "10000.00" {
-		t.Errorf("gross_revenue_kzt = %v, want 10000.00 (a refund does not unmake the sale)",
+	if figures["gross_revenue_kzt"] != "10350.00" {
+		t.Errorf("gross_revenue_kzt = %v, want 10350.00 (a refund does not unmake the sale)",
 			figures["gross_revenue_kzt"])
 	}
 
@@ -206,7 +206,7 @@ func TestRefundNotifiesTheAttendee(t *testing.T) {
 	if sent[0].Subject != "Refund for Refund Mail Fest" {
 		t.Errorf("subject = %q", sent[0].Subject)
 	}
-	for _, want := range []string{"Hi Dana,", "5000.00", "Event rescheduled", "no longer be admitted"} {
+	for _, want := range []string{"Hi Dana,", "5175.00", "Event rescheduled", "no longer be admitted"} {
 		if !contains(sent[0].Body, want) {
 			t.Errorf("refund email is missing %q; body:\n%s", want, sent[0].Body)
 		}
