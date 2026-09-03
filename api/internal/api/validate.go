@@ -273,7 +273,7 @@ func validateTimezone(tz string) string {
 }
 
 // blank reports whether a string is empty once trimmed, matching the
-// btrim(...) <> '' check constraints in the schema.
+// btrim(...) <> ” check constraints in the schema.
 func blank(s string) bool { return strings.TrimSpace(s) == "" }
 
 // nameFromEmail derives a display name from an address, used when a client
