@@ -190,9 +190,11 @@ func TestPlatformAdminCanSuspendPaidSales(t *testing.T) {
 	}
 
 	// Paid tickets stop; free registration carries on, which is the point of
-	// this being narrower than suspending the whole event.
+	// this being narrower than suspending the whole event. The code is
+	// specifically "suspended", distinct from a not-yet-activated event
+	// (PAID-SUSP-02).
 	requireErrorCode(t, c.buy(eventID, paidID, 1, "After", "after@biletflow.test"),
-		http.StatusForbidden, CodePaidSalesNotActive)
+		http.StatusForbidden, CodePaidSalesSuspended)
 	requireStatus(t, c.buy(eventID, freeID, 1, "Still Free", "stillfree@biletflow.test"),
 		http.StatusCreated)
 

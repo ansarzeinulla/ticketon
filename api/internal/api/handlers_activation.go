@@ -10,8 +10,13 @@ import (
 )
 
 // CodePaidSalesNotActive is returned when a paid ticket is bought before the
-// organizer has activated paid sales (SRS 4.5).
-const CodePaidSalesNotActive = "paid_sales_not_active"
+// organizer has activated paid sales (SRS 4.5). CodePaidSalesSuspended is the
+// narrower case where a platform admin has stopped an already-active event's
+// paid sales (SRS 4.12): the UI says "suspended", not "not yet on sale".
+const (
+	CodePaidSalesNotActive = "paid_sales_not_active"
+	CodePaidSalesSuspended = "paid_sales_suspended"
+)
 
 type activationResponse struct {
 	Activation store.Activation `json:"activation"`

@@ -221,7 +221,14 @@ func (s *Server) writeCheckoutError(w http.ResponseWriter, r *http.Request, err 
 	case errors.As(err, &activationErr):
 		// 403 rather than 409: this is not a race the attendee can retry out
 		// of, it is the event not being cleared to take money yet (SRS 4.5).
-		httpx.WriteError(w, http.StatusForbidden, CodePaidSalesNotActive,
+		// A platform suspension is reported with its own code so the UI can
+		// distinguish "the admin stopped this" from "the organizer has not
+		// finished setup" (SRS 4.12, PAID-SUSP-02).
+		code := CodePaidSalesNotActive
+		if activationErr.Status == store.ActivationSuspended {
+			code = CodePaidSalesSuspended
+		}
+		httpx.WriteError(w, http.StatusForbidden, code,
 			capitalise(activationErr.Error())+".")
 
 	case errors.As(err, &inventoryErr):
