@@ -162,19 +162,45 @@ func (s *AnalyticsStore) ForEvent(
 
 	// --- money ---------------------------------------------------------------
 	// Summed in SQL so numeric(14,2) never becomes a float.
-	err = s.pool.QueryRow(ctx, `
-		SELECT count(*),
-		       COALESCE(sum(total_kzt), 0)::numeric(14,2)::text,
-		       COALESCE(sum(discount_kzt), 0)::numeric(14,2)::text,
-		       COALESCE(sum(refunded_kzt), 0)::numeric(14,2)::text,
-		       COALESCE(sum(total_kzt) - sum(refunded_kzt), 0)::numeric(14,2)::text
-		  FROM orders
-		 WHERE event_id = $1
-		   AND status::text IN `+countedOrderStatuses+`
-		   AND ($2::timestamptz IS NULL OR placed_at >= $2)
-		   AND ($3::timestamptz IS NULL OR placed_at < $3)`,
-		eventID, from, to,
-	).Scan(&a.OrdersCount, &a.GrossRevenueKZT, &a.DiscountsKZT, &a.RefundsKZT, &a.NetRevenueKZT)
+	//
+	// Two forms. Unfiltered, the figures come straight off the order totals,
+	// which is authoritative and includes the processing fee. Filtered to one
+	// ticket type, an order total cannot be used - an order may span tiers - so
+	// the figures are summed from that tier's order_items instead: gross from
+	// the line totals, refunds from the lines of fully-refunded orders, net as
+	// the difference. This is what makes the stat cards answer the tier
+	// dropdown (SRS 4.15 / FLT-02), not just the ticket counts.
+	if ticketTypeID != nil {
+		err = s.pool.QueryRow(ctx, `
+			SELECT count(DISTINCT o.id),
+			       COALESCE(sum(oi.line_total_kzt), 0)::numeric(14,2)::text,
+			       COALESCE(sum(oi.discount_kzt), 0)::numeric(14,2)::text,
+			       COALESCE(sum(oi.line_total_kzt) FILTER (WHERE o.status::text = 'refunded'), 0)::numeric(14,2)::text,
+			       COALESCE(sum(oi.line_total_kzt) FILTER (WHERE o.status::text <> 'refunded'), 0)::numeric(14,2)::text
+			  FROM order_items oi
+			  JOIN orders o ON o.id = oi.order_id
+			 WHERE o.event_id = $1
+			   AND oi.ticket_type_id = $4
+			   AND o.status::text IN `+countedOrderStatuses+`
+			   AND ($2::timestamptz IS NULL OR o.placed_at >= $2)
+			   AND ($3::timestamptz IS NULL OR o.placed_at < $3)`,
+			eventID, from, to, *f.TicketTypeID,
+		).Scan(&a.OrdersCount, &a.GrossRevenueKZT, &a.DiscountsKZT, &a.RefundsKZT, &a.NetRevenueKZT)
+	} else {
+		err = s.pool.QueryRow(ctx, `
+			SELECT count(*),
+			       COALESCE(sum(total_kzt), 0)::numeric(14,2)::text,
+			       COALESCE(sum(discount_kzt), 0)::numeric(14,2)::text,
+			       COALESCE(sum(refunded_kzt), 0)::numeric(14,2)::text,
+			       COALESCE(sum(total_kzt) - sum(refunded_kzt), 0)::numeric(14,2)::text
+			  FROM orders
+			 WHERE event_id = $1
+			   AND status::text IN `+countedOrderStatuses+`
+			   AND ($2::timestamptz IS NULL OR placed_at >= $2)
+			   AND ($3::timestamptz IS NULL OR placed_at < $3)`,
+			eventID, from, to,
+		).Scan(&a.OrdersCount, &a.GrossRevenueKZT, &a.DiscountsKZT, &a.RefundsKZT, &a.NetRevenueKZT)
+	}
 	if err != nil {
 		return EventAnalytics{}, mapError(err)
 	}

@@ -383,6 +383,20 @@ func TestAnalyticsFilters(t *testing.T) {
 	if byType, _ := analytics(vipOnly)["by_ticket_type"].([]any); len(byType) != 1 {
 		t.Errorf("VIP-only breakdown has %d rows, want 1", len(byType))
 	}
+	// FLT-02: the money card must answer the tier filter too, not just the
+	// counts. VIP is one ticket at 10000 (its own line total, no fee), which is
+	// distinct from the unfiltered gross of 20700.
+	if got := analytics(vipOnly)["gross_revenue_kzt"]; got != "10000.00" {
+		t.Errorf("VIP-only gross_revenue_kzt = %v, want 10000.00", got)
+	}
+	stdOnly := c.get(path+"?ticket_type_id="+stdID.String(), organizer.Token)
+	requireStatus(t, stdOnly, http.StatusOK)
+	if got := analytics(stdOnly)["gross_revenue_kzt"]; got != "10000.00" {
+		t.Errorf("Standard-only gross_revenue_kzt = %v, want 10000.00 (2 x 5000)", got)
+	}
+	if got := number(analytics(stdOnly), "tickets_sold"); got != 2 {
+		t.Errorf("Standard-only tickets_sold = %d, want 2", got)
+	}
 
 	// A window before the sales happened contains none of them.
 	past := time.Now().AddDate(0, 0, -30).UTC().Format("2006-01-02")
