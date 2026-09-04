@@ -432,6 +432,19 @@ func TestAssignStaffValidation(t *testing.T) {
 }
 
 // SRS 4.8: an accidental check-in may be reversed, which frees the ticket.
+// TestReverseRejectsATicketThatWasNeverCheckedIn covers 5.md REV-ERR-01: the
+// dedicated ticket_not_checked_in code, not a bare conflict.
+func TestReverseRejectsATicketThatWasNeverCheckedIn(t *testing.T) {
+	c := newClient(t)
+	organizer := c.register("reverseNoop")
+
+	ticketID, _ := c.buyOneTicket(organizer.Token, "Reverse Noop Event")
+
+	requireErrorCode(t,
+		c.post("/api/v1/tickets/"+ticketID+"/check-in/reverse", organizer.Token, nil),
+		http.StatusConflict, CodeTicketNotCheckedIn)
+}
+
 func TestReverseCheckInAllowsRescan(t *testing.T) {
 	c := newClient(t)
 	organizer := c.register("reverseGate")

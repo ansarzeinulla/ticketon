@@ -20,13 +20,24 @@ BEGIN;
 -- audit_logs is append-only and is therefore never deleted - see the guarded
 -- insert at the end of this file.
 -- -----------------------------------------------------------------------------
-DELETE FROM refunds       WHERE order_id::text LIKE 'd0000000%';
+-- A row is cleared if it lives in the demo id space *or* points at a demo
+-- event - a real order placed against a demo event while testing has to go
+-- before the event it references can be removed, and its own id is random.
+-- refunds and tickets RESTRICT order/event deletion, so they are cleared first;
+-- order_items, attendees, payments, campaigns, ticket_types and check-ins all
+-- carry ON DELETE CASCADE and go with their parents.
+DELETE FROM refunds
+ WHERE order_id IN (SELECT id FROM orders
+                     WHERE id::text LIKE 'd0000000%' OR event_id::text LIKE 'd0000000%');
+DELETE FROM tickets       WHERE event_id::text LIKE 'd0000000%';
 DELETE FROM support_cases WHERE id::text       LIKE 'd0000000%';
-DELETE FROM orders        WHERE id::text       LIKE 'd0000000%';
+DELETE FROM orders        WHERE id::text LIKE 'd0000000%' OR event_id::text LIKE 'd0000000%';
 DELETE FROM events        WHERE id::text       LIKE 'd0000000%';
 DELETE FROM venues        WHERE id::text       LIKE 'd0000000%';
 DELETE FROM notifications WHERE user_id::text  LIKE 'd0000000%';
-DELETE FROM users         WHERE id::text       LIKE 'd0000000%';
+-- Demo users are refreshed in place, never deleted: a demo account (dana) may
+-- own events a tester created by hand, and events RESTRICT that delete. The
+-- INSERTs below upsert users, roles, profiles and payout accounts instead.
 
 -- -----------------------------------------------------------------------------
 -- 1. People
@@ -48,7 +59,15 @@ INSERT INTO users (id, email, password_hash, full_name, phone, locale, status, e
     ('d0000000-0000-4000-8000-000000000004', 'aigerim@example.kz',   '$2a$12$rFCQOCmARbTQxdRMSB7wde/xelwF29B8BnCrEk5tyV3fsUvI8NI06', 'Aigerim Zhaksy',  '+7 705 444 44 44', 'ru', 'active', now() - interval '25 days'),
     ('d0000000-0000-4000-8000-000000000005', 'olzhas@example.kz',    '$2a$12$rFCQOCmARbTQxdRMSB7wde/xelwF29B8BnCrEk5tyV3fsUvI8NI06', 'Olzhas Serik',    '+7 705 555 55 55', 'en', 'active', now() - interval '20 days'),
     ('d0000000-0000-4000-8000-000000000006', 'scanner@biletflow.kz', '$2a$12$rFCQOCmARbTQxdRMSB7wde/xelwF29B8BnCrEk5tyV3fsUvI8NI06', 'Askar Kassym',    '+7 707 666 66 66', 'kk', 'active', now() - interval '15 days'),
-    ('d0000000-0000-4000-8000-000000000007', 'support@biletflow.kz', '$2a$12$rFCQOCmARbTQxdRMSB7wde/xelwF29B8BnCrEk5tyV3fsUvI8NI06', 'Sofia Ivanova',   '+7 707 777 77 77', 'ru', 'active', now() - interval '80 days');
+    ('d0000000-0000-4000-8000-000000000007', 'support@biletflow.kz', '$2a$12$rFCQOCmARbTQxdRMSB7wde/xelwF29B8BnCrEk5tyV3fsUvI8NI06', 'Sofia Ivanova',   '+7 707 777 77 77', 'ru', 'active', now() - interval '80 days')
+ON CONFLICT (id) DO UPDATE SET
+    email             = EXCLUDED.email,
+    password_hash     = EXCLUDED.password_hash,
+    full_name         = EXCLUDED.full_name,
+    phone             = EXCLUDED.phone,
+    locale            = EXCLUDED.locale,
+    status            = EXCLUDED.status,
+    email_verified_at = EXCLUDED.email_verified_at;
 
 INSERT INTO user_roles (user_id, role) VALUES
     ('d0000000-0000-4000-8000-000000000001', 'organizer'),
@@ -59,7 +78,8 @@ INSERT INTO user_roles (user_id, role) VALUES
     ('d0000000-0000-4000-8000-000000000005', 'attendee'),
     ('d0000000-0000-4000-8000-000000000006', 'event_admin'),
     ('d0000000-0000-4000-8000-000000000007', 'support_staff'),
-    ('d0000000-0000-4000-8000-000000000007', 'platform_admin');
+    ('d0000000-0000-4000-8000-000000000007', 'platform_admin')
+ON CONFLICT (user_id, role) DO NOTHING;
 
 INSERT INTO organizer_profiles (id, user_id, display_name, legal_name, contact_email, description, identity_verified_at) VALUES
     ('d0000000-0000-4000-8000-000000000101', 'd0000000-0000-4000-8000-000000000001',
@@ -67,11 +87,18 @@ INSERT INTO organizer_profiles (id, user_id, display_name, legal_name, contact_e
      'Independent organizer of student and community events in Almaty.', now() - interval '80 days'),
     ('d0000000-0000-4000-8000-000000000102', 'd0000000-0000-4000-8000-000000000002',
      'AITU Student Union', 'AITU Student Union', 'timur@biletflow.kz',
-     'Student union running free campus events.', NULL);
+     'Student union running free campus events.', NULL)
+ON CONFLICT (id) DO UPDATE SET
+    display_name         = EXCLUDED.display_name,
+    legal_name           = EXCLUDED.legal_name,
+    contact_email        = EXCLUDED.contact_email,
+    description          = EXCLUDED.description,
+    identity_verified_at = EXCLUDED.identity_verified_at;
 
 INSERT INTO payout_accounts (id, organizer_profile_id, provider, provider_account_ref, masked_account, status, is_simulated, verified_at) VALUES
     ('d0000000-0000-4000-8000-000000000111', 'd0000000-0000-4000-8000-000000000101',
-     'simulated', 'sim_acct_dana_0001', '**** **** **** 4242', 'verified', true, now() - interval '75 days');
+     'simulated', 'sim_acct_dana_0001', '**** **** **** 4242', 'verified', true, now() - interval '75 days')
+ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
 -- 2. Predefined venue layout (SRS 4.3.1 - one layout is enough for the MVP)

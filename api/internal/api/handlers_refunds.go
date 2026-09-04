@@ -13,7 +13,7 @@ import (
 // Refund error codes. Each failure has its own so the dashboard can say what
 // actually happened rather than showing one generic message.
 const (
-	CodeAlreadyRefunded = "already_refunded"
+	CodeAlreadyRefunded = "order_already_refunded"
 	CodeNotRefundable   = "not_refundable"
 )
 

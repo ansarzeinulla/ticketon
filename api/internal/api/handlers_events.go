@@ -633,6 +633,17 @@ func (s *Server) handlePublishEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// An event whose end time has already passed cannot be put on sale: there
+	// is nothing left to sell a ticket to (2.md LIFE-ERR-03). A published event
+	// still reaches the "completed" bucket the ordinary way - by ending after
+	// it was published, not by being published after it ended.
+	if !event.EndsAt.After(time.Now()) {
+		httpx.WriteValidationError(w, fieldErrors{
+			"ends_at": "This event has already ended and cannot be published.",
+		})
+		return
+	}
+
 	published, err := s.events.Publish(r.Context(), event.ID)
 	if err != nil {
 		httpx.WriteInternalError(w, r, err)

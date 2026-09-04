@@ -102,10 +102,12 @@ func validateMultiline(label, value string, min, max int) string {
 func validateText(label, value string, min, max int, multiline bool) string {
 	v := strings.TrimSpace(value)
 	n := runeLen(v)
+	if n == 0 {
+		// An empty required field reads as "required", not "too short" - the
+		// user has not typed too little, they have typed nothing.
+		return label + " is required."
+	}
 	if n < min {
-		if min <= 1 {
-			return label + " is required."
-		}
 		return fmt.Sprintf("%s must be at least %d characters.", label, min)
 	}
 	if n > max {

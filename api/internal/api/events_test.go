@@ -624,6 +624,38 @@ func TestPublishAndCancelLifecycle(t *testing.T) {
 	}
 }
 
+// TestPublishRejectsAnEndedEvent covers 2.md LIFE-ERR-03: an event whose end
+// time is already in the past cannot be put on sale.
+func TestPublishRejectsAnEndedEvent(t *testing.T) {
+	c := newClient(t)
+	owner := c.register("endedpublish")
+	eventID, _ := c.createEvent(owner.Token, "Already Over Event")
+
+	// Age it into the past directly - the create endpoint forbids past dates,
+	// but time passing on an unpublished draft is a real situation.
+	if _, err := c.pool.Exec(t.Context(), `
+		UPDATE events SET starts_at = now() - interval '2 days',
+		                  ends_at = now() - interval '1 day'
+		 WHERE id = $1`, eventID); err != nil {
+		t.Fatalf("age the event: %v", err)
+	}
+
+	res := c.post("/api/v1/events/"+eventID.String()+"/publish", owner.Token, nil)
+	requireStatus(t, res, http.StatusUnprocessableEntity)
+	if _, ok := res.errorFields()["ends_at"]; !ok {
+		t.Errorf("error fields = %v, want an entry for ends_at", res.errorFields())
+	}
+
+	var status string
+	if err := c.pool.QueryRow(t.Context(),
+		`SELECT status::text FROM events WHERE id = $1`, eventID).Scan(&status); err != nil {
+		t.Fatalf("read event: %v", err)
+	}
+	if status != "draft" {
+		t.Errorf("status = %q, want draft (the publish must not have taken effect)", status)
+	}
+}
+
 func TestLifecycleActionsRequireOwnership(t *testing.T) {
 	c := newClient(t)
 	owner := c.register("lifecycleowner")

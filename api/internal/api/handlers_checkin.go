@@ -14,11 +14,12 @@ import (
 // Scanner result codes. The mobile app switches on these to decide whether to
 // show the green or the red screen, so they are part of the contract.
 const (
-	CodeAlreadyCheckedIn = "already_checked_in"
-	CodeCampaignToken    = "campaign_token"
-	CodeWrongEvent       = "wrong_event"
-	CodeTicketNotValid   = "ticket_not_valid"
-	CodeUnknownTicket    = "unknown_ticket"
+	CodeAlreadyCheckedIn   = "already_checked_in"
+	CodeCampaignToken      = "campaign_token"
+	CodeWrongEvent         = "wrong_event"
+	CodeTicketNotValid     = "ticket_not_valid"
+	CodeUnknownTicket      = "unknown_ticket"
+	CodeTicketNotCheckedIn = "ticket_not_checked_in"
 )
 
 type checkInRequest struct {
@@ -149,7 +150,7 @@ func (s *Server) handleReverseCheckIn(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := s.checkIns.Reverse(r.Context(), detail.ID, mustUserID(r.Context()), req.Reason)
 	if errors.Is(err, store.ErrNotFound) {
-		httpx.WriteError(w, http.StatusConflict, httpx.CodeConflict,
+		httpx.WriteError(w, http.StatusConflict, CodeTicketNotCheckedIn,
 			"This ticket is not currently checked in.")
 		return
 	}

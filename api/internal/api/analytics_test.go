@@ -512,16 +512,19 @@ func TestEventLifecycleFiltering(t *testing.T) {
 	requireStatus(t, c.post("/api/v1/events/"+activeID.String()+"/publish", organizer.Token, nil),
 		http.StatusOK)
 
-	// Completed: finished yesterday.
+	// Completed: published while still upcoming, then aged so it finished
+	// yesterday. Publishing happens first because an event that has already
+	// ended can no longer be published (LIFE-ERR-03); a completed event is one
+	// that ended after being put on sale.
 	completedID, _ := c.createEvent(organizer.Token, "Completed Show")
+	requireStatus(t, c.post("/api/v1/events/"+completedID.String()+"/publish", organizer.Token, nil),
+		http.StatusOK)
 	if _, err := c.pool.Exec(t.Context(), `
 		UPDATE events SET starts_at = now() - interval '2 days',
 		                  ends_at = now() - interval '1 day'
 		 WHERE id = $1`, completedID); err != nil {
 		t.Fatalf("age the completed event: %v", err)
 	}
-	requireStatus(t, c.post("/api/v1/events/"+completedID.String()+"/publish", organizer.Token, nil),
-		http.StatusOK)
 
 	// Cancelled.
 	cancelledID, _ := c.createEvent(organizer.Token, "Cancelled Show")
