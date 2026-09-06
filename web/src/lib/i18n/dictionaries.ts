@@ -98,6 +98,19 @@ const en = {
     simulatedNote: "This was a simulated payment. No card was charged and no money moved.",
     back: "Back to BiletFlow",
   },
+
+  myOrders: {
+    metaTitle: "My tickets",
+    heading: "My tickets",
+    subtitle: "Every order placed with this account, newest first.",
+    loading: "Loading your tickets\u2026",
+    empty: "You have no tickets yet.",
+    browse: "Browse events",
+    error: "Could not load your tickets.",
+    ticketsOne: "{count} ticket",
+    ticketsMany: "{count} tickets",
+    stillValid: "{count} still valid",
+  },
   promo: {
     haveCode: "Have a promo code?",
     apply: "Apply",
@@ -225,6 +238,19 @@ const ru: Dictionary = {
     simulatedNote: "Это была симуляция оплаты. Карта не списывалась и деньги не двигались.",
     back: "Назад в BiletFlow",
   },
+
+  myOrders: {
+    metaTitle: "Мои билеты",
+    heading: "Мои билеты",
+    subtitle: "Все заказы этого аккаунта, начиная с новых.",
+    loading: "Загружаем ваши билеты\u2026",
+    empty: "У вас пока нет билетов.",
+    browse: "Посмотреть события",
+    error: "Не удалось загрузить ваши билеты.",
+    ticketsOne: "{count} билет",
+    ticketsMany: "{count} билетов",
+    stillValid: "{count} ещё действительны",
+  },
   promo: {
     haveCode: "Есть промокод?",
     apply: "Применить",
@@ -335,6 +361,19 @@ const kk: Dictionary = {
       "Кіреберісте QR-кодты көрсетіңіз немесе басып шығару үшін A4 PDF жүктеп алыңыз. Әр билет бір адамды бір рет өткізеді.",
     simulatedNote: "Бұл төлем симуляциясы болды. Картадан ақша алынбады және қаражат аударылмады.",
     back: "BiletFlow-ға оралу",
+  },
+
+  myOrders: {
+    metaTitle: "Менің билеттерім",
+    heading: "Менің билеттерім",
+    subtitle: "Осы аккаунтпен жасалған барлық тапсырыстар, жаңасынан бастап.",
+    loading: "Билеттеріңіз жүктелуде\u2026",
+    empty: "Сізде әзірге билет жоқ.",
+    browse: "Іс-шараларды қарау",
+    error: "Билеттеріңізді жүктеу мүмкін болмады.",
+    ticketsOne: "{count} билет",
+    ticketsMany: "{count} билет",
+    stillValid: "{count} әлі жарамды",
   },
   promo: {
     haveCode: "Промокод бар ма?",

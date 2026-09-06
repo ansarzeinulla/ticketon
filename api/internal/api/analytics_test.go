@@ -502,6 +502,19 @@ func TestTimelineRecordsTheEventHistory(t *testing.T) {
 	if got, _ := afterEverything.Body["entries"].([]any); len(got) != 0 {
 		t.Errorf("%d entries in a future window, want 0", len(got))
 	}
+
+	// A plain `to` date means "through the end of that day", the same rule the
+	// analytics filter uses. Everything above happened today, so bounding the
+	// range at today must keep all of it - an exclusive midnight bound would
+	// silently drop the whole day.
+	today := time.Now().UTC().Format("2006-01-02")
+	throughToday := c.get(
+		"/api/v1/events/"+eventID.String()+"/timeline?to="+today, organizer.Token)
+	requireStatus(t, throughToday, http.StatusOK)
+	if got, _ := throughToday.Body["entries"].([]any); len(got) != len(entries) {
+		t.Errorf("to=%s returned %d entries, want all %d - `to` must be end-of-day",
+			today, len(got), len(entries))
+	}
 }
 
 // SRS 4.16 groups an organizer's events as Upcoming, Active, Completed and

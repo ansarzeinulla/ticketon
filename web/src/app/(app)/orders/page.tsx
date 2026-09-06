@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/button";
 import { ApiError, api } from "@/lib/api";
+import { useT } from "@/lib/i18n/context";
 import { formatKZT } from "@/lib/money";
 import type { BuyerOrder } from "@/lib/types";
 
@@ -19,6 +20,7 @@ import type { BuyerOrder } from "@/lib/types";
  * orders placed with the same address are claimed automatically by the API.
  */
 export default function MyOrdersPage() {
+  const t = useT();
   const [orders, setOrders] = useState<BuyerOrder[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,10 +31,10 @@ export default function MyOrdersPage() {
       setError(null);
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === "AbortError") return;
-      setError(cause instanceof ApiError ? cause.message : "Could not load your tickets.");
+      setError(cause instanceof ApiError ? cause.message : t("myOrders.error"));
       setOrders([]);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -46,7 +48,7 @@ export default function MyOrdersPage() {
     return (
       <div className="flex items-center gap-3 text-sm text-foreground-muted">
         <Spinner />
-        Loading your tickets…
+        {t("myOrders.loading")}
       </div>
     );
   }
@@ -54,21 +56,18 @@ export default function MyOrdersPage() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">My tickets</h1>
-        <p className="mt-1 text-sm text-foreground-muted">
-          Every order placed with this account, newest first.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("myOrders.heading")}</h1>
+        <p className="mt-1 text-sm text-foreground-muted">{t("myOrders.subtitle")}</p>
       </div>
 
       {error && <Alert>{error}</Alert>}
 
       {orders.length === 0 && !error ? (
         <div className="rounded-xl border border-border-subtle bg-surface p-6 text-sm text-foreground-muted">
-          You have no tickets yet.{" "}
+          {t("myOrders.empty")}{" "}
           <Link href="/events" className="font-medium text-brand underline">
-            Browse events
+            {t("myOrders.browse")}
           </Link>
-          .
         </div>
       ) : (
         <ul className="space-y-3">
@@ -90,10 +89,15 @@ export default function MyOrdersPage() {
                       ({order.timezone})
                     </p>
                     <p className="mt-1 text-xs text-foreground-muted">
-                      {order.order_number} · {order.ticket_count} ticket
-                      {order.ticket_count === 1 ? "" : "s"}
+                      {order.order_number} ·{" "}
+                      {t(
+                        order.ticket_count === 1
+                          ? "myOrders.ticketsOne"
+                          : "myOrders.ticketsMany",
+                        { count: order.ticket_count },
+                      )}
                       {order.live_tickets !== order.ticket_count &&
-                        ` · ${order.live_tickets} still valid`}
+                        ` · ${t("myOrders.stillValid", { count: order.live_tickets })}`}
                     </p>
                   </div>
                   <div className="text-right">

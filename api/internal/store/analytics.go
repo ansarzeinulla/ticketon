@@ -30,9 +30,19 @@ type EventAnalytics struct {
 	// Money, in KZT.
 	GrossRevenueKZT string `json:"gross_revenue_kzt"`
 	DiscountsKZT    string `json:"discounts_kzt"`
-	RefundsKZT      string `json:"refunds_kzt"`
-	NetRevenueKZT   string `json:"net_revenue_kzt"`
-	OrdersCount     int    `json:"orders_count"`
+	// FeesKZT is what BiletFlow charged in processing fees, and
+	// EstimatedPayoutKZT is what the organizer would be paid: the ticket money
+	// on orders that were not refunded, with the platform's fee removed. SRS
+	// 4.6 asks the organizer to see "gross sales, fees, refunds, and estimated
+	// payouts", so the fee cannot stay buried inside the order total.
+	//
+	// "Estimated" is the SRS's own word and is meant literally - no real money
+	// moves in this MVP (SRS 3.2).
+	FeesKZT            string `json:"fees_kzt"`
+	RefundsKZT         string `json:"refunds_kzt"`
+	NetRevenueKZT      string `json:"net_revenue_kzt"`
+	EstimatedPayoutKZT string `json:"estimated_payout_kzt"`
+	OrdersCount        int    `json:"orders_count"`
 
 	// Attendance.
 	CheckedIn         int     `json:"checked_in"`
@@ -181,6 +191,8 @@ func (s *AnalyticsStore) ForEvent(
 			       COALESCE(sum(oi.line_total_kzt), 0)::numeric(14,2)::text,
 			       COALESCE(sum(oi.discount_kzt), 0)::numeric(14,2)::text,
 			       COALESCE(sum(oi.line_total_kzt) FILTER (WHERE o.status::text = 'refunded'), 0)::numeric(14,2)::text,
+			       COALESCE(sum(oi.line_total_kzt) FILTER (WHERE o.status::text <> 'refunded'), 0)::numeric(14,2)::text,
+			       '0.00',
 			       COALESCE(sum(oi.line_total_kzt) FILTER (WHERE o.status::text <> 'refunded'), 0)::numeric(14,2)::text
 			  FROM order_items oi
 			  JOIN orders o ON o.id = oi.order_id
@@ -190,21 +202,26 @@ func (s *AnalyticsStore) ForEvent(
 			   AND ($2::timestamptz IS NULL OR o.placed_at >= $2)
 			   AND ($3::timestamptz IS NULL OR o.placed_at < $3)`,
 			eventID, from, to, *f.TicketTypeID,
-		).Scan(&a.OrdersCount, &a.GrossRevenueKZT, &a.DiscountsKZT, &a.RefundsKZT, &a.NetRevenueKZT)
+		).Scan(&a.OrdersCount, &a.GrossRevenueKZT, &a.DiscountsKZT, &a.RefundsKZT,
+			&a.NetRevenueKZT, &a.FeesKZT, &a.EstimatedPayoutKZT)
 	} else {
 		err = s.pool.QueryRow(ctx, `
 			SELECT count(*),
 			       COALESCE(sum(total_kzt), 0)::numeric(14,2)::text,
 			       COALESCE(sum(discount_kzt), 0)::numeric(14,2)::text,
 			       COALESCE(sum(refunded_kzt), 0)::numeric(14,2)::text,
-			       COALESCE(sum(total_kzt) - sum(refunded_kzt), 0)::numeric(14,2)::text
+			       COALESCE(sum(total_kzt) - sum(refunded_kzt), 0)::numeric(14,2)::text,
+			       COALESCE(sum(processing_fee_kzt), 0)::numeric(14,2)::text,
+			       COALESCE(sum(total_kzt - processing_fee_kzt)
+			                FILTER (WHERE status::text <> 'refunded'), 0)::numeric(14,2)::text
 			  FROM orders
 			 WHERE event_id = $1
 			   AND status::text IN `+countedOrderStatuses+`
 			   AND ($2::timestamptz IS NULL OR placed_at >= $2)
 			   AND ($3::timestamptz IS NULL OR placed_at < $3)`,
 			eventID, from, to,
-		).Scan(&a.OrdersCount, &a.GrossRevenueKZT, &a.DiscountsKZT, &a.RefundsKZT, &a.NetRevenueKZT)
+		).Scan(&a.OrdersCount, &a.GrossRevenueKZT, &a.DiscountsKZT, &a.RefundsKZT,
+			&a.NetRevenueKZT, &a.FeesKZT, &a.EstimatedPayoutKZT)
 	}
 	if err != nil {
 		return EventAnalytics{}, mapError(err)
