@@ -9,6 +9,7 @@
 import type {
   AcceptedResponse,
   Activation,
+  BuyerOrderListResponse,
   ActivationSubmission,
   AdminSearchResponse,
   BiletEvent,
@@ -370,6 +371,17 @@ export const api = {
 
     const suffix = query.size > 0 ? `?${query}` : "";
     return request<EventListResponse>(`/events/mine${suffix}`, { signal });
+  },
+
+  /**
+   * GET /orders - the signed-in attendee's own orders (SRS 4.9).
+   *
+   * The per-order page is reachable by its unguessable id so a guest keeps
+   * their tickets; this is how somebody with an account finds them again
+   * without digging out the confirmation email.
+   */
+  listMyOrders(signal?: AbortSignal) {
+    return request<BuyerOrderListResponse>("/orders", { signal });
   },
 
   /** GET /events - the public catalogue. */

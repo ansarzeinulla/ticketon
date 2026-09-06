@@ -37,9 +37,19 @@ export const config = {
   // page and has to stay reachable without an account. Only the organizer's
   // create form under /events/new is gated, alongside everything in /dashboard.
   // /orders/[id] is public too - the order id is the unguessable capability.
+  // "/orders" (exact) is the signed-in attendee's own list and is gated; the
+  // matcher deliberately does not use "/orders/:path*", which would break the
+  // guest link.
   // /admin is gated here only for the token cookie. Whether the account is
   // actually a platform admin is decided by the API on every request, and by
   // the portal itself for what it renders - a route matcher cannot read a role
   // out of a cookie, and pretending otherwise would be security theatre.
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/events/new", "/login", "/register"],
+  matcher: [
+    "/dashboard/:path*",
+    "/admin/:path*",
+    "/events/new",
+    "/orders",
+    "/login",
+    "/register",
+  ],
 };

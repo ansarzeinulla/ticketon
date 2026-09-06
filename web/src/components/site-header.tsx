@@ -9,6 +9,9 @@ import { useAuth } from "@/lib/auth-context";
 const links = [
   { href: "/dashboard", label: "Events" },
   { href: "/events/new", label: "Create event" },
+  // SRS 4.9: an attendee reaches their own orders from their account, not only
+  // from the emailed link. Every signed-in user is an attendee of something.
+  { href: "/orders", label: "My tickets" },
 ] as const;
 
 /** Shown only to platform administrators (SRS 2.1). */

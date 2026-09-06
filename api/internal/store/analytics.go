@@ -17,8 +17,12 @@ type EventAnalytics struct {
 	EventID uuid.UUID `json:"event_id"`
 
 	// Capacity and sales.
-	TotalCapacity    int     `json:"total_capacity"`
-	TicketsSold      int     `json:"tickets_sold"`
+	TotalCapacity int `json:"total_capacity"`
+	TicketsSold   int `json:"tickets_sold"`
+	// TicketsReserved is stock held by carts that have not been paid for yet.
+	// SRS 4.3 asks the organizer to see available, reserved, sold, refunded and
+	// checked-in side by side, so a held seat is not silently counted as free.
+	TicketsReserved  int     `json:"tickets_reserved"`
 	TicketsRemaining int     `json:"tickets_remaining"`
 	TicketsRefunded  int     `json:"tickets_refunded"`
 	PercentageSold   float64 `json:"percentage_sold"`
@@ -47,6 +51,7 @@ type TicketTypeSales struct {
 	PriceKZT      string    `json:"price_kzt"`
 	QuantityTotal int       `json:"quantity_total"`
 	Sold          int       `json:"sold"`
+	Reserved      int       `json:"reserved"`
 	Remaining     int       `json:"remaining"`
 	CheckedIn     int       `json:"checked_in"`
 	RevenueKZT    string    `json:"revenue_kzt"`
@@ -138,7 +143,7 @@ func (s *AnalyticsStore) ForEvent(
 			(SELECT count(*) FROM issued WHERE status = 'refunded'),
 			(SELECT count(*) FROM issued WHERE status = 'checked_in')`,
 		eventID, ticketTypeID,
-	).Scan(&a.TotalCapacity, new(int), &a.TicketsSold, &a.TicketsRefunded, &a.CheckedIn)
+	).Scan(&a.TotalCapacity, &a.TicketsReserved, &a.TicketsSold, &a.TicketsRefunded, &a.CheckedIn)
 	if err != nil {
 		return EventAnalytics{}, mapError(err)
 	}
@@ -223,6 +228,7 @@ func (s *AnalyticsStore) byTicketType(
 ) ([]TicketTypeSales, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT tt.id, tt.name, tt.price_kzt::text, tt.quantity_total,
+		       tt.quantity_reserved,
 		       COALESCE(live.sold, 0),
 		       COALESCE(live.checked_in, 0),
 		       COALESCE(money.revenue, 0)::numeric(14,2)::text
@@ -254,7 +260,7 @@ func (s *AnalyticsStore) byTicketType(
 	for rows.Next() {
 		var t TicketTypeSales
 		if err := rows.Scan(&t.TicketTypeID, &t.Name, &t.PriceKZT, &t.QuantityTotal,
-			&t.Sold, &t.CheckedIn, &t.RevenueKZT); err != nil {
+			&t.Reserved, &t.Sold, &t.CheckedIn, &t.RevenueKZT); err != nil {
 			return nil, err
 		}
 		t.Remaining = t.QuantityTotal - t.Sold

@@ -196,6 +196,26 @@ export interface Order {
   created_at: string;
 }
 
+/** One of the signed-in attendee's own orders (SRS 4.9). */
+export interface BuyerOrder {
+  id: string;
+  order_number: string;
+  status: string;
+  total_kzt: Money;
+  placed_at?: string;
+  event_id: string;
+  event_title: string;
+  event_slug: string;
+  event_starts_at: string;
+  timezone: string;
+  ticket_count: number;
+  live_tickets: number;
+}
+
+export interface BuyerOrderListResponse {
+  orders: BuyerOrder[];
+}
+
 export interface OrderItem {
   id: string;
   order_id: string;
