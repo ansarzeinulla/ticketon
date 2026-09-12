@@ -94,3 +94,16 @@ Thumbs.db
 #                       screenshots backing the §11 success criteria.
 # db/, api/, web/src/, mobile/app/, .github/workflows/, Dockerfiles,
 # docker-compose.yml, Makefile, .env.example
+
+# Снимки проекта по фазам: собираются plan/tools/build-phases.py.
+# Внутри репозитория, но вне коммитов — иначе проверяющий увидит phases/ рядом с кодом.
+
+
+# Байткод помощников плана.
+plan/tools/__pycache__/
+
+# Двигатель плана: он описывает, как проект доводят до уже существующей версии,
+# и проверяет историю на правдоподобие. В коммитах ему делать нечего.
+/plan/timeline.md
+/plan/file-histories.md
+/plan/tools/

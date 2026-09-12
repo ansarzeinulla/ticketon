@@ -29,7 +29,7 @@ CSCI 361 - Fall 2026
 
 ## Progress snapshot
 
-The team closed 2 phases, Ф11 and Ф12. In Ф11 verification: every phase specification is run against the running system and the failures found are fixed; in Ф12 documentation, a demo rehearsal and the release tag. 13 issues were closed across the two phases: 31 files added, 40 modified and 0 deleted. The team is on track.
+The team closed 2 phases, Ф11 and Ф12. In Ф11 verification: every phase specification is run against the running system and the failures found are fixed; in Ф12 documentation, a demo rehearsal and the release tag. 13 issues were closed across the two phases: 31 files added, 38 modified and 0 deleted. The team is on track.
 
 ## Phases closed this period
 
@@ -59,8 +59,8 @@ A phase is the unit of work, not the week. Each phase opens with every issue cre
 **What this phase adds to the project:** documentation, a demo rehearsal and the release tag.
 
 - Issues: 5 stories, each closed by exactly one commit carrying the issue title.
-- Files: 0 added, 16 modified, 0 deleted, 0 renamed.
-- Lines: about +934 / -282.
+- Files: 0 added, 14 modified, 0 deleted, 0 renamed.
+- Lines: about +737 / -223.
 
 | Issue | Owner | Title (also the commit message) |
 | --- | --- | --- |
@@ -95,7 +95,7 @@ Zones do not overlap: every file in the repository has exactly one owner (`plan/
 
 - Team member: <STUDENT-A> (S1)
   - Contribution this period: BF-89 Say "required" instead of "too short"; BF-97 Record the final plan state.
-  - Evidence: 1 files added, 14 modified, 0 deleted, 0 renamed; about +1067/-274 lines.
+  - Evidence: 1 files added, 12 modified, 0 deleted, 0 renamed; about +870/-215 lines.
   - Next responsibility: the demo.
 
 - Team member: <STUDENT-B> (S2)

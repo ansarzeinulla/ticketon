@@ -29,7 +29,7 @@ CSCI 361 - Fall 2026
 
 ## Progress snapshot
 
-The team closed one phase, Ф0, in which the team chose the product, the stack and how it will be deployed, and wrote the requirements down before writing any code. 5 issues were opened and closed, producing 19 files. No application code was written on purpose: the point of this phase was to agree what to build before building it. The team is on track.
+The team closed one phase, Ф0, in which the team chose the product, the stack and how it will be deployed, and wrote the requirements down before writing any code. 5 issues were opened and closed, producing 17 files. No application code was written on purpose: the point of this phase was to agree what to build before building it. The team is on track.
 
 ## Phases closed this period
 
@@ -40,8 +40,8 @@ A phase is the unit of work, not the week. Each phase opens with every issue cre
 **What this phase adds to the project:** the team chose the product, the stack and how it will be deployed, and wrote the requirements down before writing any code.
 
 - Issues: 5 stories, each closed by exactly one commit carrying the issue title.
-- Files: 19 added, 1 modified, 0 deleted, 0 renamed.
-- Lines: about +2711 / -1.
+- Files: 17 added, 1 modified, 0 deleted, 0 renamed.
+- Lines: about +2325 / -1.
 
 | Issue | Owner | Title (also the commit message) |
 | --- | --- | --- |
@@ -73,7 +73,7 @@ Zones do not overlap: every file in the repository has exactly one owner (`plan/
 
 - Team member: <STUDENT-A> (S1)
   - Contribution this period: BF-1 Record the delivery plan.
-  - Evidence: 12 files added, 0 modified, 0 deleted, 0 renamed; about +1363/-0 lines.
+  - Evidence: 10 files added, 0 modified, 0 deleted, 0 renamed; about +968/-0 lines.
   - Next responsibility: BF-6, BF-7, BF-8 in Ф1.
 
 - Team member: <STUDENT-B> (S2)
@@ -93,7 +93,7 @@ Zones do not overlap: every file in the repository has exactly one owner (`plan/
 
 - Team member: <STUDENT-E> (S5)
   - Contribution this period: BF-4 Add the SRS and repository skeleton; BF-5 Describe the product and the stack.
-  - Evidence: 5 files added, 1 modified, 0 deleted, 0 renamed; about +1012/-1 lines.
+  - Evidence: 5 files added, 1 modified, 0 deleted, 0 renamed; about +1021/-1 lines.
   - Next responsibility: BF-12, BF-13 in Ф1.
 
 ## Risks, blockers, and decisions needed
