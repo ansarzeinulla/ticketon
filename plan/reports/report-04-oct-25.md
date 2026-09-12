@@ -1,14 +1,12 @@
-# Biweekly Team Progress Report
+# Biweekly Team Progress Report 4
 
 CSCI 361 - Fall 2026
-
-**Cover page**
 
 ## Report details
 
 - Team name: <TEAM-NAME>
-- Reporting period: October 12, 2026 - October 25, 2026
-- Submitted by: Student A
+- Reporting period: October 12 - October 25, 2026
+- Submitted by: <STUDENT-A>
 - Current stage: Build
 - Overall status: On track
 
@@ -21,186 +19,121 @@ CSCI 361 - Fall 2026
 
 | Full name | Student ID | Email |
 | --- | --- | --- |
-| Student A | <STUDENT-ID-A> | <EMAIL-A> |
-| Student B | <STUDENT-ID-B> | <EMAIL-B> |
-| Student C | <STUDENT-ID-C> | <EMAIL-C> |
-| Student D | <STUDENT-ID-D> | <EMAIL-D> |
-| Student E | <STUDENT-ID-E> | <EMAIL-E> |
+| <STUDENT-A> (S1) | <STUDENT-ID-A> | <EMAIL-A> |
+| <STUDENT-B> (S2) | <STUDENT-ID-B> | <EMAIL-B> |
+| <STUDENT-C> (S3) | <STUDENT-ID-C> | <EMAIL-C> |
+| <STUDENT-D> (S4) | <STUDENT-ID-D> | <EMAIL-D> |
+| <STUDENT-E> (S5) | <STUDENT-ID-E> | <EMAIL-E> |
 
 {{< pagebreak >}}
 
 ## Progress snapshot
 
-The ticket became a real object this period and the door works. Attendees get an
-A4 PDF with a QR code that survives printing in grayscale, Kazakh names render
-natively rather than being transliterated, and the Expo scanner admits an
-attendee with a full-screen green result in well under two seconds - refusing a
-second scan of the same ticket. With checkout, delivery and check-in all
-working, the core attendee journey is complete end to end. On track.
+The team closed 2 phases, Ф5 and Ф6. In Ф5 money enters the picture: activation gates paid sales, inventory holds under concurrent checkout, and payment is simulated; in Ф6 a paid order produces a real ticket: QR token, printable A4 PDF, and a confirmation email. 15 issues were closed across the two phases: 40 files added, 39 modified and 6 deleted. The team is on track.
 
-## Progress this period
+## Phases closed this period
 
-### Previous commitments
+A phase is the unit of work, not the week. Each phase opens with every issue created up front, and closes only when all of them are merged; the next phase starts after that.
 
-- Previous commitment: Printable A4 PDF tickets with scannable QR codes
+### Ф5 - Paid sales
+
+**What this phase adds to the project:** money enters the picture: activation gates paid sales, inventory holds under concurrent checkout, and payment is simulated.
+
+- Issues: 8 stories, each closed by exactly one commit carrying the issue title.
+- Files: 20 added, 25 modified, 4 deleted, 0 renamed.
+- Lines: about +5417 / -674.
+
+| Issue | Owner | Title (also the commit message) |
+| --- | --- | --- |
+| `BF-37` | S1 | Add organizer profiles and money handling |
+| `BF-38` | S1 | Enforce role permissions |
+| `BF-39` | S2 | Add seat inventory |
+| `BF-40` | S2 | Gate paid sales behind activation |
+| `BF-41` | S3 | Show the activation notice |
+| `BF-42` | S3 | Add the seat map and seated checkout |
+| `BF-43` | S4 | Add the activation checklist |
+| `BF-44` | S5 | Prove checkout cannot oversell |
+
+### Ф6 - Digital tickets
+
+**What this phase adds to the project:** a paid order produces a real ticket: QR token, printable A4 PDF, and a confirmation email.
+
+- Issues: 7 stories, each closed by exactly one commit carrying the issue title.
+- Files: 20 added, 14 modified, 2 deleted, 0 renamed.
+- Lines: about +9105 / -726.
+
+| Issue | Owner | Title (also the commit message) |
+| --- | --- | --- |
+| `BF-45` | S1 | Add the QR decoding dependency |
+| `BF-46` | S1 | Send the order confirmation |
+| `BF-47` | S2 | Generate admission QR tokens |
+| `BF-48` | S2 | Embed a Unicode font for Cyrillic |
+| `BF-49` | S3 | Link the printable PDF |
+| `BF-50` | S4 | Show ticket status per order |
+| `BF-51` | S5 | Add the Phase 4 specification |
+
+## Previous commitments
+
+- Previous commitment: close Ф3 - Events and ticket types
   - Status: Completed
-  - Result or reason: One A4 page (595.28 x 841.89 pt) carrying event title,
-    local date and time, venue, attendee, tier, seat where applicable, the ticket
-    identifier and the QR. The raw token is printed underneath as a manual
-    fallback for door staff. No payment details appear anywhere on it.
-  - Evidence: <JIRA-URL>/browse/BF-49, <REPO-URL>/pull/34
+  - Result: Organizers can create events and ticket types and move an event through its lifecycle.
+  - Evidence: branch `phase-03`, issues BF-22-BF-28 on the board.
 
-- Previous commitment: Cyrillic renders natively on the ticket
+- Previous commitment: close Ф4 - Public catalogue and free registration
   - Status: Completed
-  - Result or reason: We embed DejaVu Sans Condensed in the binary, covering
-    Cyrillic including the Kazakh letters ә қ ң ө ұ ү һ і and the ₸ sign. An
-    attendee named "Нұрлан Сағындық" sees their own name on the ticket. The
-    earlier transliteration approach was removed.
-  - Evidence: <JIRA-URL>/browse/BF-50, <REPO-URL>/pull/35
-
-- Previous commitment: The scanner app admits an attendee
-  - Status: Completed
-  - Result or reason: Sign in, pick an assigned event, scan with the camera:
-    full-screen green with the attendee's name, tier, seat and a live gate count.
-    A second scan of the same ticket gives full-screen red with the time of the
-    first entry, enforced by a partial unique index rather than by application
-    logic alone.
-  - Evidence: <JIRA-URL>/browse/BF-59, <JIRA-URL>/browse/BF-60, <REPO-URL>/pull/40
-
-- Previous commitment: Gate staff delegation
-  - Status: Completed
-  - Result or reason: Staff are assigned by email and see only their assigned
-    events. Revoking an assignment cuts off the gate on the next request - 403.
-  - Evidence: <JIRA-URL>/browse/BF-54, <REPO-URL>/pull/37
-
-- Previous commitment: Cart holds and the processing fee
-  - Status: Completed
-  - Result or reason: Stock is reserved for 15 minutes while a buyer is in
-    checkout and released automatically when the hold expires. The fee is shown
-    before payment and stored on the order, with a database constraint asserting
-    `total = subtotal - discount + fee`.
-  - Evidence: <JIRA-URL>/browse/BF-55, <JIRA-URL>/browse/BF-56, <REPO-URL>/pull/38
-
-- Previous commitment: Phase 4 and 5 specifications
-  - Status: Completed
-  - Result or reason: `4.md` and `5.md` written and executed.
-  - Evidence: <REPO-URL>/blob/main/4.md, <REPO-URL>/blob/main/5.md
-
-### Other progress
-
-- Outcome: Campaign codes are refused at the gate
-  - Status: Done
-  - Evidence or result: A promotional `CMP_` token - bare or embedded in an event
-    URL - is rejected with 400 `campaign_token` before any ticket lookup, and no
-    check-in row is written. SRS 4.14 requires this explicitly. (BF-61)
-
-- Outcome: QR round-trip proof
-  - Status: Done
-  - Evidence or result: An automated test generates the QR, decodes it with an
-    independent library and asserts the string equals the stored `qr_token`
-    byte for byte. The admission token is separate from the ticket's database id.
-
-- Outcome: Event activity timeline
-  - Status: Done
-  - Evidence or result: A chronological feed of publication, ticket changes,
-    orders and check-ins, newest first. (BF-58)
+  - Result: The first end-to-end path works: a visitor browses the public catalogue and registers for a free event.
+  - Evidence: branch `phase-04`, issues BF-29-BF-36 on the board.
 
 ## Commitments for the next two weeks
 
-- Commitment: Full refunds that restock and void tickets
-  - Owner(s): Student B
-  - Due date: November 1, 2026
-  - Success criteria: One transaction sets the order to refunded, writes the
-    refund ledger row, voids the tickets, clears any check-in timestamp and
-    returns the stock; a refunded ticket is refused at the gate.
+- Commitment: close Ф7 - Check-in and the gate
+  - Owners: all five (8 issues, 1-3 each)
+  - Due date: end of Ф7
+  - Success criteria: the gate works: the Expo scanner admits a ticket once and refuses the second attempt; all issues merged and CI green.
 
-- Commitment: Attendees can find their own orders
-  - Owner(s): Student C
-  - Due date: November 1, 2026
-  - Success criteria: A signed-in attendee sees every order placed with their
-    account, including guest orders later claimed by the same email address.
-
-- Commitment: Support desk with contextual cases
-  - Owner(s): Student D
-  - Due date: November 8, 2026
-  - Success criteria: An attendee opens a case from an order; the organizer
-    answers from an inbox; the first staff reply moves it to in progress and
-    assigns it; internal notes are invisible to the attendee.
-
-- Commitment: Admin search and suspension
-  - Owner(s): Student A
-  - Due date: November 8, 2026
-  - Success criteria: One search box across users, events, orders and payments;
-    suspending an event stops sales immediately while already-sold tickets still scan.
-
-- Commitment: Manual attendee search and check-in reversal
-  - Owner(s): Student E
-  - Due date: November 8, 2026
-  - Success criteria: Staff find an attendee by name and admit them without a QR;
-    an accidental check-in can be undone and the ticket used again.
-
-- Commitment: Phase 6 specification and Phase 4-6 results
-  - Owner(s): Student E
-  - Due date: November 8, 2026
-  - Success criteria: `6.md` written; Phases 4, 5 and 6 executed and recorded.
+- Commitment: close Ф8 - Refunds, support and administration
+  - Owners: all five (14 issues, 1-3 each)
+  - Due date: end of Ф8
+  - Success criteria: what happens when things go wrong: refunds, cancellations, the support desk and the admin portal; all issues merged and CI green.
 
 ## Team contributions and coordination
 
-- Team member: Student A
-  - Contribution this period: Gate staff assignment and revocation, and the
-    order confirmation email carrying ticket links.
-  - Evidence: <JIRA-URL>/browse/BF-54, <JIRA-URL>/browse/BF-47, <REPO-URL>/pull/37
-  - Next responsibility: The admin portal - unified search, suspension and the
-    moderation queue.
+Zones do not overlap: every file in the repository has exactly one owner (`plan/ownership.map`), so no two people edit the same file and merge conflicts cannot occur. Review runs crosswise - each person reviews a fixed teammate's pull requests.
 
-- Team member: Student B
-  - Contribution this period: QR token generation, the A4 PDF renderer with an
-    embedded Unicode font, 15-minute cart holds and the processing fee.
-  - Evidence: <JIRA-URL>/browse/BF-49, <JIRA-URL>/browse/BF-55, <REPO-URL>/pull/34
-  - Next responsibility: Refunds - atomic, restocking and gate-invalidating.
+- Team member: <STUDENT-A> (S1)
+  - Contribution this period: BF-37 Add organizer profiles and money handling; BF-38 Enforce role permissions; BF-45 Add the QR decoding dependency; BF-46 Send the order confirmation.
+  - Evidence: 10 files added, 12 modified, 3 deleted, 0 renamed; about +2166/-357 lines.
+  - Next responsibility: BF-52 in Ф7.
 
-- Team member: Student C
-  - Contribution this period: Ticket cards with QR images served directly from
-    the API, and PDF download links; paired with Student E on the Expo setup.
-  - Evidence: <JIRA-URL>/browse/BF-51, <REPO-URL>/pull/36
-  - Next responsibility: The attendee's own orders page.
+- Team member: <STUDENT-B> (S2)
+  - Contribution this period: BF-39 Add seat inventory; BF-40 Gate paid sales behind activation; BF-47 Generate admission QR tokens; BF-48 Embed a Unicode font for Cyrillic.
+  - Evidence: 21 files added, 10 modified, 2 deleted, 0 renamed; about +8238/-353 lines.
+  - Next responsibility: BF-53, BF-54 in Ф7.
 
-- Team member: Student D
-  - Contribution this period: The event activity timeline and ticket status
-    columns in the dashboard.
-  - Evidence: <JIRA-URL>/browse/BF-58, <REPO-URL>/pull/39
-  - Next responsibility: The support desk, backend and UI.
+- Team member: <STUDENT-C> (S3)
+  - Contribution this period: BF-41 Show the activation notice; BF-42 Add the seat map and seated checkout; BF-49 Link the printable PDF.
+  - Evidence: 4 files added, 10 modified, 1 deleted, 0 renamed; about +2308/-598 lines.
+  - Next responsibility: BF-55 in Ф7.
 
-- Team member: Student E
-  - Contribution this period: The Expo scanner - sign-in, event picker, camera
-    scanning, duplicate refusal and campaign-code rejection - plus the Phase 4
-    and 5 specifications.
-  - Evidence: <JIRA-URL>/browse/BF-59, <JIRA-URL>/browse/BF-62, <REPO-URL>/pull/40
-  - Next responsibility: Manual attendee search and check-in reversal.
+- Team member: <STUDENT-D> (S4)
+  - Contribution this period: BF-43 Add the activation checklist; BF-50 Show ticket status per order.
+  - Evidence: 3 files added, 2 modified, 0 deleted, 0 renamed; about +527/-31 lines.
+  - Next responsibility: BF-56 in Ф7.
+
+- Team member: <STUDENT-E> (S5)
+  - Contribution this period: BF-44 Prove checkout cannot oversell; BF-51 Add the Phase 4 specification.
+  - Evidence: 2 files added, 5 modified, 0 deleted, 0 renamed; about +1283/-61 lines.
+  - Next responsibility: BF-57, BF-58, BF-59 in Ф7.
 
 ## Risks, blockers, and decisions needed
 
-- Risk: Half the required backlog remains and six weeks are left, including
-  refunds, support, analytics, campaigns and the admin portal.
-  - Impact: A slip in Sprint 5 would push analytics into the final week, which is
-    reserved for hardening.
-  - Next action: The bonus items stay unstarted. Offline scanner sync and the
-    `.ics` export are formally deferred to "only if Sprint 6 finishes early".
-  - Owner: Student A
-
-- Decision: The mobile app targets the Expo Go runtime, not a store build.
-  - Impact: We cannot demonstrate an App Store or Play submission.
-  - Next action: Accepted - SRS §8 explicitly excludes store publication from the
-    MVP. We demonstrate on a physical device through Expo Go.
-  - Owner: Student E
+- Risk: concurrent checkout is the one place where a bug costs real money.
+  - Impact: overselling a sold-out event would be visible to buyers.
+  - Next action: a dedicated concurrency test runs in CI on every push.
+  - Owner: <STUDENT-E>
 
 ## Changes, reflection, and support
 
-- Scope or schedule changes: None to required scope. Bonus features formally
-  deferred, as recorded above.
-- Team reflection: Pairing Student C with Student E on the Expo setup removed
-  our single point of failure on mobile in about two hours - cheap insurance,
-  worth repeating for any lane only one person can run. Change: the PDF work
-  needed a spike before an estimate; we will spike unknowns explicitly rather
-  than estimating them blind.
+- Scope or schedule changes: None. Both phases closed inside their planned window.
+- Team reflection: Writing a file small and wrong on purpose, then rewriting it later, felt wasteful at first. It is the only way the history shows how the project actually grew.
 - Instructor/TA help requested: None.

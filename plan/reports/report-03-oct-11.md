@@ -1,14 +1,12 @@
-# Biweekly Team Progress Report
+# Biweekly Team Progress Report 3
 
 CSCI 361 - Fall 2026
-
-**Cover page**
 
 ## Report details
 
 - Team name: <TEAM-NAME>
-- Reporting period: September 28, 2026 - October 11, 2026
-- Submitted by: Student A
+- Reporting period: September 28 - October 11, 2026
+- Submitted by: <STUDENT-A>
 - Current stage: Build
 - Overall status: On track
 
@@ -21,174 +19,118 @@ CSCI 361 - Fall 2026
 
 | Full name | Student ID | Email |
 | --- | --- | --- |
-| Student A | <STUDENT-ID-A> | <EMAIL-A> |
-| Student B | <STUDENT-ID-B> | <EMAIL-B> |
-| Student C | <STUDENT-ID-C> | <EMAIL-C> |
-| Student D | <STUDENT-ID-D> | <EMAIL-D> |
-| Student E | <STUDENT-ID-E> | <EMAIL-E> |
+| <STUDENT-A> (S1) | <STUDENT-ID-A> | <EMAIL-A> |
+| <STUDENT-B> (S2) | <STUDENT-ID-B> | <EMAIL-B> |
+| <STUDENT-C> (S3) | <STUDENT-ID-C> | <EMAIL-C> |
+| <STUDENT-D> (S4) | <STUDENT-ID-D> | <EMAIL-D> |
+| <STUDENT-E> (S5) | <STUDENT-ID-E> | <EMAIL-E> |
 
 {{< pagebreak >}}
 
 ## Progress snapshot
 
-BiletFlow takes money this period. Checkout runs as a single database
-transaction that locks the tier, decrements inventory and issues the tickets
-together, and we can now demonstrate that it does not oversell under load: 30
-concurrent buyers against 10 tickets produce exactly 10 orders. Free
-registration works without payment details, paid tiers are gated behind the
-activation checklist, and the audit log physically refuses to be edited. This
-was the sprint we were most worried about and it landed on time.
+The team closed 2 phases, Ф3 and Ф4. In Ф3 organizers can create events and ticket types and move an event through its lifecycle; in Ф4 the first end-to-end path works: a visitor browses the public catalogue and registers for a free event. 15 issues were closed across the two phases: 47 files added, 25 modified and 5 deleted. The team is on track.
 
-## Progress this period
+## Phases closed this period
 
-### Previous commitments
+A phase is the unit of work, not the week. Each phase opens with every issue created up front, and closes only when all of them are merged; the next phase starts after that.
 
-- Previous commitment: Checkout that cannot oversell
+### Ф3 - Events and ticket types
+
+**What this phase adds to the project:** organizers can create events and ticket types and move an event through its lifecycle.
+
+- Issues: 7 stories, each closed by exactly one commit carrying the issue title.
+- Files: 23 added, 11 modified, 2 deleted, 0 renamed.
+- Lines: about +4065 / -291.
+
+| Issue | Owner | Title (also the commit message) |
+| --- | --- | --- |
+| `BF-22` | S1 | Seed a demo organizer and event |
+| `BF-23` | S2 | Derive a slug from the title |
+| `BF-24` | S2 | Manage ticket types |
+| `BF-25` | S3 | Add event types and client methods |
+| `BF-26` | S4 | Move the create form to the client |
+| `BF-27` | S4 | Add the organizer dashboard |
+| `BF-28` | S5 | Add the Phase 2 specification |
+
+### Ф4 - Public catalogue and free registration
+
+**What this phase adds to the project:** the first end-to-end path works: a visitor browses the public catalogue and registers for a free event.
+
+- Issues: 8 stories, each closed by exactly one commit carrying the issue title.
+- Files: 24 added, 14 modified, 3 deleted, 0 renamed.
+- Lines: about +4497 / -788.
+
+| Issue | Owner | Title (also the commit message) |
+| --- | --- | --- |
+| `BF-29` | S1 | Add order, ticket and attendee tables |
+| `BF-30` | S2 | Serve the public event page |
+| `BF-31` | S2 | Add the checkout transaction |
+| `BF-32` | S3 | Add the public catalogue |
+| `BF-33` | S3 | Add the order page |
+| `BF-34` | S3 | Add the formatting dependencies |
+| `BF-35` | S4 | List orders and attendees |
+| `BF-36` | S5 | Add the Phase 3 specification |
+
+## Previous commitments
+
+- Previous commitment: close Ф1 - Running skeleton
   - Status: Completed
-  - Result or reason: The tier rows are locked with `SELECT … FOR UPDATE` inside
-    the same transaction that writes the order, the items and the tickets, so a
-    losing buyer's whole attempt rolls back. `TestCheckoutDoesNotOversellUnderConcurrency`
-    fires 30 goroutines at 10 tickets: 10 succeed, 20 get 409
-    `insufficient_inventory`, and the database ends with `quantity_sold = 10`.
-  - Evidence: <JIRA-URL>/browse/BF-33, <JIRA-URL>/browse/BF-39, <REPO-URL>/pull/24
+  - Result: An empty but running system: database, API service, web app, CI and container images all start with one command.
+  - Evidence: branch `phase-01`, issues BF-6-BF-13 on the board.
 
-- Previous commitment: Free registration end to end
+- Previous commitment: close Ф2 - Identity and accounts
   - Status: Completed
-  - Result or reason: A guest reserves a free ticket with only a name and email,
-    the order is created at a zero total, a QR ticket is issued and the confirmation
-    email prints to the API console. No payment details are requested.
-  - Evidence: <JIRA-URL>/browse/BF-35, <REPO-URL>/pull/26
-
-- Previous commitment: Paid-sales activation gate
-  - Status: Completed
-  - Result or reason: Paid tiers return 403 until identity, payout, terms and the
-    activation fee are all confirmed. Free tiers on the same event keep selling -
-    activation gates money, not registration.
-  - Evidence: <JIRA-URL>/browse/BF-41, <REPO-URL>/pull/29
-
-- Previous commitment: Append-only audit log
-  - Status: Completed
-  - Result or reason: A `BEFORE UPDATE OR DELETE` trigger raises an exception, so
-    history cannot be rewritten even with direct database access.
-  - Evidence: <JIRA-URL>/browse/BF-31, <REPO-URL>/pull/22
-
-- Previous commitment: Phase 3 test specification and results
-  - Status: Completed
-  - Result or reason: `3.md` written and executed; all cases pass.
-  - Evidence: <REPO-URL>/blob/main/3.md
-
-### Other progress
-
-- Outcome: Simulated payments with a decline path
-  - Status: Done
-  - Evidence or result: Payments are clearly labelled simulations and never
-    presented as real. A buyer email at the decline domain triggers a refusal,
-    which returns 402 and rolls the transaction back, so a failed payment leaves
-    no order, no ticket and no reserved stock. (BF-42)
-
-- Outcome: Role-based permissions
-  - Status: Done
-  - Evidence or result: Attendee, organizer, event admin, support staff and
-    platform admin, checked per request against the database rather than trusted
-    from the token, so suspending an account takes effect immediately. (BF-32)
-
-- Outcome: Notifications
-  - Status: Done
-  - Evidence or result: `notifications` rows plus formatted console emails for
-    order confirmation and account actions. (BF-40)
+  - Result: Accounts exist: people can register, sign in, and reset a password, and the API knows who is calling it.
+  - Evidence: branch `phase-02`, issues BF-14-BF-21 on the board.
 
 ## Commitments for the next two weeks
 
-- Commitment: Printable A4 PDF tickets with scannable QR codes
-  - Owner(s): Student B
-  - Due date: October 18, 2026
-  - Success criteria: One A4 page carrying event, venue, attendee, tier, seat,
-    ticket identifier and QR; the QR decodes back to the exact stored token; no
-    payment details appear.
+- Commitment: close Ф5 - Paid sales
+  - Owners: all five (8 issues, 1-3 each)
+  - Due date: end of Ф5
+  - Success criteria: money enters the picture: activation gates paid sales, inventory holds under concurrent checkout, and payment is simulated; all issues merged and CI green.
 
-- Commitment: Cyrillic renders natively on the ticket
-  - Owner(s): Student B
-  - Due date: October 18, 2026
-  - Success criteria: A ticket for "Нұрлан Сағындық" prints the actual name, not
-    a transliteration and not question marks.
-
-- Commitment: The scanner app admits an attendee
-  - Owner(s): Student E
-  - Due date: October 25, 2026
-  - Success criteria: Sign in on a device, pick an assigned event, scan a ticket,
-    full-screen green with the attendee's name; a second scan is refused.
-
-- Commitment: Gate staff delegation
-  - Owner(s): Student A
-  - Due date: October 25, 2026
-  - Success criteria: An organizer assigns staff by email; that account sees only
-    assigned events; revoking access cuts the gate off immediately.
-
-- Commitment: Cart holds and the processing fee
-  - Owner(s): Student B
-  - Due date: October 25, 2026
-  - Success criteria: Stock is reserved for 15 minutes during checkout and
-    released automatically; the fee is shown before payment and stored on the order.
-
-- Commitment: Phase 4 and 5 specifications
-  - Owner(s): Student E
-  - Due date: October 25, 2026
-  - Success criteria: `4.md` and `5.md` written and used to sign the sprint off.
+- Commitment: close Ф6 - Digital tickets
+  - Owners: all five (7 issues, 1-3 each)
+  - Due date: end of Ф6
+  - Success criteria: a paid order produces a real ticket: QR token, printable A4 PDF, and a confirmation email; all issues merged and CI green.
 
 ## Team contributions and coordination
 
-- Team member: Student A
-  - Contribution this period: Role permissions enforced per request, the
-    append-only audit trigger, and the notification store and console mailer.
-  - Evidence: <JIRA-URL>/browse/BF-31, <JIRA-URL>/browse/BF-32, <REPO-URL>/pull/22
-  - Next responsibility: Gate staff assignment and revocation.
+Zones do not overlap: every file in the repository has exactly one owner (`plan/ownership.map`), so no two people edit the same file and merge conflicts cannot occur. Review runs crosswise - each person reviews a fixed teammate's pull requests.
 
-- Team member: Student B
-  - Contribution this period: The checkout transaction with row locking, free
-    registration, the activation gate and simulated payments with a decline path.
-  - Evidence: <JIRA-URL>/browse/BF-33, <JIRA-URL>/browse/BF-42, <REPO-URL>/pull/24
-  - Next responsibility: QR tokens and the printable PDF ticket.
+- Team member: <STUDENT-A> (S1)
+  - Contribution this period: BF-22 Seed a demo organizer and event; BF-29 Add order, ticket and attendee tables.
+  - Evidence: 2 files added, 4 modified, 1 deleted, 0 renamed; about +642/-111 lines.
+  - Next responsibility: BF-37, BF-38 in Ф5.
 
-- Team member: Student C
-  - Contribution this period: The ticket selector with live totals in tiyn, the
-    checkout dialog, and the order confirmation page.
-  - Evidence: <JIRA-URL>/browse/BF-36, <JIRA-URL>/browse/BF-43, <REPO-URL>/pull/27
-  - Next responsibility: Ticket cards with QR images and PDF download links.
+- Team member: <STUDENT-B> (S2)
+  - Contribution this period: BF-23 Derive a slug from the title; BF-24 Manage ticket types; BF-30 Serve the public event page; BF-31 Add the checkout transaction.
+  - Evidence: 15 files added, 5 modified, 0 deleted, 0 renamed; about +3205/-165 lines.
+  - Next responsibility: BF-39, BF-40 in Ф5.
 
-- Team member: Student D
-  - Contribution this period: The organizer's order and attendee lists, and the
-    activation checklist UI.
-  - Evidence: <JIRA-URL>/browse/BF-37, <JIRA-URL>/browse/BF-44, <REPO-URL>/pull/30
-  - Next responsibility: The event activity timeline.
+- Team member: <STUDENT-C> (S3)
+  - Contribution this period: BF-25 Add event types and client methods; BF-32 Add the public catalogue; BF-33 Add the order page; BF-34 Add the formatting dependencies.
+  - Evidence: 14 files added, 11 modified, 3 deleted, 0 renamed; about +2931/-720 lines.
+  - Next responsibility: BF-41, BF-42 in Ф5.
 
-- Team member: Student E
-  - Contribution this period: The Phase 3 specification, the concurrency test
-    that proves checkout cannot oversell, and business-rule tests in SQL.
-  - Evidence: <JIRA-URL>/browse/BF-39, <JIRA-URL>/browse/BF-45
-  - Next responsibility: The Expo scanner app.
+- Team member: <STUDENT-D> (S4)
+  - Contribution this period: BF-26 Move the create form to the client; BF-27 Add the organizer dashboard; BF-35 List orders and attendees.
+  - Evidence: 14 files added, 2 modified, 0 deleted, 0 renamed; about +1458/-2 lines.
+  - Next responsibility: BF-43 in Ф5.
+
+- Team member: <STUDENT-E> (S5)
+  - Contribution this period: BF-28 Add the Phase 2 specification; BF-36 Add the Phase 3 specification.
+  - Evidence: 2 files added, 3 modified, 1 deleted, 0 renamed; about +326/-81 lines.
+  - Next responsibility: BF-44 in Ф5.
 
 ## Risks, blockers, and decisions needed
 
-- Risk: The scanner app is the only mobile deliverable and only one person owns it.
-  - Impact: If Student E is unavailable, SRS 4.8 is at risk with no second owner.
-  - Next action: Student E pairs with Student C on the Expo setup in week 7 so a
-    second person can run and debug the app. The check-in API stays on the Go
-    side, where three of us can work on it.
-  - Owner: Student E
-
-- Risk: PDF generation with Cyrillic. The core PDF fonts have no Cyrillic at all.
-  - Impact: Kazakh and Russian names would print as question marks - unacceptable
-    for a Kazakhstan platform.
-  - Next action: Embed a Unicode TrueType face in the binary rather than
-    transliterating names. Investigated this period, scheduled as BF-50.
-  - Owner: Student B
+- None.
 
 ## Changes, reflection, and support
 
 - Scope or schedule changes: None.
-- Team reflection: Writing the concurrency test before the implementation was
-  the single best decision of the sprint - it turned "we think it locks
-  correctly" into a number we can show. We will use the same order for refunds.
-  Change: our commits were bunched on Thursdays in week 5; week 6 was spread
-  across four days and reviews were faster as a result.
+- Team reflection: The first end-to-end path took longer than planned because the client and the API were built in parallel. Fixing the merge order inside a phase (schema, then handlers, then routes, then types, then UI) solved it.
 - Instructor/TA help requested: None.

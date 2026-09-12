@@ -1,16 +1,14 @@
-# Biweekly Team Progress Report
+# Biweekly Team Progress Report 7
 
 CSCI 361 - Fall 2026
-
-**Cover page**
 
 ## Report details
 
 - Team name: <TEAM-NAME>
-- Reporting period: November 23, 2026 - November 28, 2026 (final report)
-- Submitted by: Student A
-- Current stage: Test / Complete
-- Overall status: On track - delivered
+- Reporting period: November 23 - November 28, 2026
+- Submitted by: <STUDENT-A>
+- Current stage: Test
+- Overall status: On track
 
 ### Project links
 
@@ -21,166 +19,111 @@ CSCI 361 - Fall 2026
 
 | Full name | Student ID | Email |
 | --- | --- | --- |
-| Student A | <STUDENT-ID-A> | <EMAIL-A> |
-| Student B | <STUDENT-ID-B> | <EMAIL-B> |
-| Student C | <STUDENT-ID-C> | <EMAIL-C> |
-| Student D | <STUDENT-ID-D> | <EMAIL-D> |
-| Student E | <STUDENT-ID-E> | <EMAIL-E> |
+| <STUDENT-A> (S1) | <STUDENT-ID-A> | <EMAIL-A> |
+| <STUDENT-B> (S2) | <STUDENT-ID-B> | <EMAIL-B> |
+| <STUDENT-C> (S3) | <STUDENT-ID-C> | <EMAIL-C> |
+| <STUDENT-D> (S4) | <STUDENT-ID-D> | <EMAIL-D> |
+| <STUDENT-E> (S5) | <STUDENT-ID-E> | <EMAIL-E> |
 
 {{< pagebreak >}}
 
 ## Progress snapshot
 
-BiletFlow is delivered. All eighteen required MVP features from SRS §8 are
-built, all ten phase specifications pass against a freshly seeded database, and
-`v1.0.0` is tagged. The final week went to hardening rather than features: text
-limits now count characters instead of bytes so Kazakh and Russian input is not
-quietly truncated, uploads are bounded, and organizers can see the platform fee
-and their estimated payout. The team met all twelve success criteria in SRS §11.
+The team closed 2 phases, Ф11 and Ф12. In Ф11 verification: every phase specification is run against the running system and the failures found are fixed; in Ф12 documentation, a demo rehearsal and the release tag. 13 issues were closed across the two phases: 31 files added, 40 modified and 0 deleted. The team is on track.
 
-## Progress this period
+## Phases closed this period
 
-### Previous commitments
+A phase is the unit of work, not the week. Each phase opens with every issue created up front, and closes only when all of them are merged; the next phase starts after that.
 
-- Previous commitment: Validation hardening across every text field
+### Ф11 - Verification
+
+**What this phase adds to the project:** verification: every phase specification is run against the running system and the failures found are fixed.
+
+- Issues: 8 stories, each closed by exactly one commit carrying the issue title.
+- Files: 31 added, 24 modified, 0 deleted, 0 renamed.
+- Lines: about +15194 / -834.
+
+| Issue | Owner | Title (also the commit message) |
+| --- | --- | --- |
+| `BF-89` | S1 | Say "required" instead of "too short" |
+| `BF-90` | S2 | Refuse to publish an event that has ended |
+| `BF-91` | S3 | Close the localisation gaps |
+| `BF-92` | S3 | Add the test runner dependencies |
+| `BF-93` | S4 | Make the money card answer the tier filter |
+| `BF-94` | S5 | Run the phase specifications and record results |
+| `BF-95` | S5 | Correct the specifications after the run |
+| `BF-96` | S5 | Add the Postman collection |
+
+### Ф12 - Documentation and release
+
+**What this phase adds to the project:** documentation, a demo rehearsal and the release tag.
+
+- Issues: 5 stories, each closed by exactly one commit carrying the issue title.
+- Files: 0 added, 16 modified, 0 deleted, 0 renamed.
+- Lines: about +934 / -282.
+
+| Issue | Owner | Title (also the commit message) |
+| --- | --- | --- |
+| `BF-97` | S1 | Record the final plan state |
+| `BF-98` | S2 | Update the API documentation |
+| `BF-99` | S3 | Update the web documentation |
+| `BF-100` | S5 | Update the README and run instructions |
+| `BF-101` | S5 | Tag v1.0.0 |
+
+## Previous commitments
+
+- Previous commitment: close Ф9 - Analytics, campaigns, localisation
   - Status: Completed
-  - Result or reason: Every length limit is counted in characters, not bytes. The
-    old byte limits gave Cyrillic half the room of Latin, since a Kazakh letter
-    costs two bytes in UTF-8 - a bug that only shows up in the language most of
-    our users write in. Passwords are pre-hashed before bcrypt so its 72-byte
-    ceiling no longer leaks into the product. Uploads are bounded by size, type
-    and pixel dimensions.
-  - Evidence: <JIRA-URL>/browse/BF-95, <REPO-URL>/pull/64
+  - Result: Organizers see numbers and run campaigns, and the site speaks Kazakh and Russian.
+  - Evidence: branch `phase-09`, issues BF-71-BF-79 on the board.
 
-- Previous commitment: Fees and estimated payout visible to organizers
+- Previous commitment: close Ф10 - Shipping shape
   - Status: Completed
-  - Result or reason: The dashboard now shows the processing fee charged and the
-    estimated payout - the ticket money on unrefunded orders with that fee
-    removed - alongside gross and refunds, which SRS 4.6 requires. Gross stays
-    historical after a refund while the payout drops to zero.
-  - Evidence: <JIRA-URL>/browse/BF-96, <REPO-URL>/pull/65
-
-- Previous commitment: Remaining localisation gaps closed
-  - Status: Completed
-  - Result or reason: Every customer-facing page renders in Kazakh and Russian.
-    SRS §7 makes this a requirement rather than a bonus, so we treated a missed
-    English string as a defect.
-  - Evidence: <JIRA-URL>/browse/BF-98, <REPO-URL>/pull/66
-
-- Previous commitment: Full regression sweep, Phases 1 to 10
-  - Status: Completed
-  - Result or reason: All ten specifications executed against a database rebuilt
-    from scratch. Three defects were found and fixed: an event that had already
-    ended could still be published, a blank required field reported "too short"
-    instead of "required", and the demo seed could not be re-run after a test
-    purchase because of a foreign key it did not clear.
-  - Evidence: <JIRA-URL>/browse/BF-100, <JIRA-URL>/browse/BF-101
-
-- Previous commitment: Documentation, demo rehearsal and release tag
-  - Status: Completed
-  - Result or reason: `README.md` and the Postman collection are current; the
-    demo runs end to end from `make reset && make seed`; `v1.0.0` tagged.
-  - Evidence: <REPO-URL>/releases/tag/v1.0.0
-
-### Other progress
-
-- Outcome: SRS §11 success criteria verified one by one
-  - Status: Done
-  - Evidence or result: All twelve confirmed on a clean database: a free event
-    published and tickets distributed; simulated activation and demonstration
-    orders; checkout producing a QR ticket; a printed ticket scanning at the
-    gate; the scanner preventing duplicate entry; a contextual support case
-    answered; a campaign QR producing an attributed discounted order; the scanner
-    refusing campaign codes while accepting tickets; accurate ticket, attendance,
-    payment and refund records; analytics with no extra checkout fields; past and
-    cancelled events reviewable and duplicable without their transactions; and an
-    administrator suspending an event to stop further sales.
-
-- Outcome: Final test position
-  - Status: Done
-  - Evidence or result: Go unit and integration suites green against PostgreSQL,
-    the SQL schema suite green, the web typecheck, lint and unit tests green, and
-    all ten phase specifications passing.
+  - Result: The product reaches the shape it is meant to ship in; character limits, payout figures and the remaining defects are settled.
+  - Evidence: branch `phase-10`, issues BF-80-BF-88 on the board.
 
 ## Commitments for the next two weeks
 
-The project ends with this report. No further commitments; the items below are
-what a following team would pick up.
-
-- Commitment: The five deferred bonus features
-  - Owner(s): Unassigned - future work
-  - Due date: Not scheduled
-  - Success criteria: Offline scanner synchronisation, `.ics` calendar export,
-    the interactive seat map, GA4 funnel analytics and support attachments.
-    Deferred deliberately since Report 4 and never started, because SRS §8 lists
-    them as bonus and §11 evaluates them separately.
-
-- Commitment: Production readiness
-  - Owner(s): Unassigned - future work
-  - Due date: Not scheduled
-  - Success criteria: Real payment and payout integration, encryption at rest,
-    and a documented backup and recovery procedure. All are outside the academic
-    MVP scope; the payment layer is a clearly labelled simulation throughout.
+- Commitment: deliver the demo and hand in the final report
+  - Owners: all five
+  - Due date: November 28, 2026
+  - Success criteria: every phase specification passes on a clean checkout, and the demo runs end to end without a manual fix.
 
 ## Team contributions and coordination
 
-- Team member: Student A
-  - Contribution this period: Character-based validation limits, upload
-    constraints, the documentation pass, and this report. Across the term: the
-    database, identity, permissions, the audit trail and the admin backend.
-  - Evidence: <JIRA-URL>/browse/BF-95, <JIRA-URL>/browse/BF-102
-  - Next responsibility: Project handover.
+Zones do not overlap: every file in the repository has exactly one owner (`plan/ownership.map`), so no two people edit the same file and merge conflicts cannot occur. Review runs crosswise - each person reviews a fixed teammate's pull requests.
 
-- Team member: Student B
-  - Contribution this period: Fees and estimated payout reporting, and fixes from
-    the sweep. Across the term: events, ticketing, the checkout transaction,
-    PDFs, refunds and campaigns.
-  - Evidence: <JIRA-URL>/browse/BF-96, <REPO-URL>/pull/65
-  - Next responsibility: Handover notes on the checkout and refund transactions.
+- Team member: <STUDENT-A> (S1)
+  - Contribution this period: BF-89 Say "required" instead of "too short"; BF-97 Record the final plan state.
+  - Evidence: 1 files added, 14 modified, 0 deleted, 0 renamed; about +1067/-274 lines.
+  - Next responsibility: the demo.
 
-- Team member: Student C
-  - Contribution this period: Closing the localisation gaps. Across the term: the
-    whole attendee-facing web experience and the Kazakh and Russian dictionaries.
-  - Evidence: <JIRA-URL>/browse/BF-98, <REPO-URL>/pull/66
-  - Next responsibility: Handover notes on the i18n structure.
+- Team member: <STUDENT-B> (S2)
+  - Contribution this period: BF-90 Refuse to publish an event that has ended; BF-98 Update the API documentation.
+  - Evidence: 0 files added, 3 modified, 0 deleted, 0 renamed; about +477/-143 lines.
+  - Next responsibility: the demo.
 
-- Team member: Student D
-  - Contribution this period: Reserved-stock figures in the dashboard and demo
-    support. Across the term: the organizer dashboard, analytics, the support
-    desk and the admin portal.
-  - Evidence: <JIRA-URL>/browse/BF-99
-  - Next responsibility: Handover notes on the analytics queries.
+- Team member: <STUDENT-C> (S3)
+  - Contribution this period: BF-91 Close the localisation gaps; BF-92 Add the test runner dependencies; BF-99 Update the web documentation.
+  - Evidence: 3 files added, 6 modified, 0 deleted, 0 renamed; about +1590/-436 lines.
+  - Next responsibility: the demo.
 
-- Team member: Student E
-  - Contribution this period: The Phase 10 specification, the full regression
-    sweep that found the three final defects, and the release tag. Across the
-    term: the scanner app, Docker and CI, and all ten specifications.
-  - Evidence: <JIRA-URL>/browse/BF-97, <JIRA-URL>/browse/BF-100
-  - Next responsibility: Handover of the test suite and release process.
+- Team member: <STUDENT-D> (S4)
+  - Contribution this period: BF-93 Make the money card answer the tier filter.
+  - Evidence: 0 files added, 2 modified, 0 deleted, 0 renamed; about +316/-95 lines.
+  - Next responsibility: the demo.
+
+- Team member: <STUDENT-E> (S5)
+  - Contribution this period: BF-94 Run the phase specifications and record results; BF-95 Correct the specifications after the run; BF-96 Add the Postman collection; BF-100 Update the README and run instructions; BF-101 Tag v1.0.0.
+  - Evidence: 27 files added, 15 modified, 0 deleted, 0 renamed; about +12678/-168 lines.
+  - Next responsibility: the demo.
 
 ## Risks, blockers, and decisions needed
 
-None outstanding. The project is delivered and tagged.
-
-For a following team, two items are worth stating plainly rather than leaving
-implied:
-
-- The payment layer is a simulation, labelled as such in the interface and the
-  database. It must not be mistaken for a real integration.
-- Encryption at rest and a backup procedure are specified in SRS §7 but are
-  deployment concerns with no artefact in this repository. They remain open.
+- None.
 
 ## Changes, reflection, and support
 
-- Scope or schedule changes: None this period. Across the term the only scope
-  change was the deliberate deferral of the five bonus features in Report 4,
-  which was never reversed.
-- Team reflection: Three things we would repeat. Writing the whole database
-  schema in week 1, so constraints shaped the code instead of being retrofitted.
-  Writing each phase specification before the feature it tests, so the code had a
-  target rather than the test being written to match whatever the code did.
-  Reviewing across lanes, so no part of the system had only one person who
-  understood it. One thing we would change: our first sprint's commits bunched
-  at the end of the week, and we only fixed that after Report 1 - the weekly
-  minimum should have been agreed on day one.
-- Instructor/TA help requested: None. Thank you for the term.
+- Scope or schedule changes: None.
+- Team reflection: The thing that saved the semester was the ownership map: in thirteen phases the team never resolved a merge conflict.
+- Instructor/TA help requested: None.

@@ -1,14 +1,12 @@
-# Biweekly Team Progress Report
+# Biweekly Team Progress Report 2
 
 CSCI 361 - Fall 2026
-
-**Cover page**
 
 ## Report details
 
 - Team name: <TEAM-NAME>
-- Reporting period: September 14, 2026 - September 27, 2026
-- Submitted by: Student A
+- Reporting period: September 14 - September 27, 2026
+- Submitted by: <STUDENT-A>
 - Current stage: Build
 - Overall status: On track
 
@@ -21,170 +19,114 @@ CSCI 361 - Fall 2026
 
 | Full name | Student ID | Email |
 | --- | --- | --- |
-| Student A | <STUDENT-ID-A> | <EMAIL-A> |
-| Student B | <STUDENT-ID-B> | <EMAIL-B> |
-| Student C | <STUDENT-ID-C> | <EMAIL-C> |
-| Student D | <STUDENT-ID-D> | <EMAIL-D> |
-| Student E | <STUDENT-ID-E> | <EMAIL-E> |
+| <STUDENT-A> (S1) | <STUDENT-ID-A> | <EMAIL-A> |
+| <STUDENT-B> (S2) | <STUDENT-ID-B> | <EMAIL-B> |
+| <STUDENT-C> (S3) | <STUDENT-ID-C> | <EMAIL-C> |
+| <STUDENT-D> (S4) | <STUDENT-ID-D> | <EMAIL-D> |
+| <STUDENT-E> (S5) | <STUDENT-ID-E> | <EMAIL-E> |
 
 {{< pagebreak >}}
 
 ## Progress snapshot
 
-BiletFlow now has real users and real events. A person can register, verify
-their address, sign in, reset a forgotten password, and - as an organizer -
-create an event, add free and paid ticket tiers, and publish it to a public
-page. Every case in the Phase 1 specification passes. The one thing that took
-longer than planned was Cyrillic slugs, which is worth the time: Kazakh event
-titles are the normal case here, not an edge case. On track.
+The team closed 2 phases, Ф1 and Ф2. In Ф1 an empty but running system: database, API service, web app, CI and container images all start with one command; in Ф2 accounts exist: people can register, sign in, and reset a password, and the API knows who is calling it. 16 issues were closed across the two phases: 95 files added, 21 modified and 3 deleted. The team is on track.
 
-## Progress this period
+## Phases closed this period
 
-### Previous commitments
+A phase is the unit of work, not the week. Each phase opens with every issue created up front, and closes only when all of them are merged; the next phase starts after that.
 
-- Previous commitment: Registration, sign-in and sessions working end to end
+### Ф1 - Running skeleton
+
+**What this phase adds to the project:** an empty but running system: database, API service, web app, CI and container images all start with one command.
+
+- Issues: 8 stories, each closed by exactly one commit carrying the issue title.
+- Files: 54 added, 5 modified, 0 deleted, 0 renamed.
+- Lines: about +5002 / -69.
+
+| Issue | Owner | Title (also the commit message) |
+| --- | --- | --- |
+| `BF-6` | S1 | Add extensions and the users table |
+| `BF-7` | S1 | Add config and the error envelope |
+| `BF-8` | S1 | Add the pool and a health route |
+| `BF-9` | S2 | Document the API layout |
+| `BF-10` | S3 | Scaffold Next.js |
+| `BF-11` | S4 | Add the signed-in shell |
+| `BF-12` | S5 | Add Postgres to compose |
+| `BF-13` | S5 | Add CI |
+
+### Ф2 - Identity and accounts
+
+**What this phase adds to the project:** accounts exist: people can register, sign in, and reset a password, and the API knows who is calling it.
+
+- Issues: 8 stories, each closed by exactly one commit carrying the issue title.
+- Files: 41 added, 16 modified, 3 deleted, 1 renamed.
+- Lines: about +6152 / -759.
+
+| Issue | Owner | Title (also the commit message) |
+| --- | --- | --- |
+| `BF-14` | S1 | Hash passwords with bcrypt |
+| `BF-15` | S1 | Reject duplicate emails with 409 |
+| `BF-16` | S1 | Cover users, tokens and mail |
+| `BF-17` | S2 | Document the authentication endpoints |
+| `BF-18` | S3 | Add the API client |
+| `BF-19` | S3 | Add reset and verify pages |
+| `BF-20` | S4 | Keep the session in the browser |
+| `BF-21` | S5 | Add the Phase 1 specification |
+
+## Previous commitments
+
+- Previous commitment: close Ф0 - Discovery
   - Status: Completed
-  - Result or reason: bcrypt (cost 12) hashing, JWT issuing and verification,
-    and the register/login endpoints, wired to the browser. Sessions are held in
-    an httpOnly cookie rather than `localStorage`, so a script on the page
-    cannot read the token.
-  - Evidence: <JIRA-URL>/browse/BF-17, <REPO-URL>/pull/11
-
-- Previous commitment: Password reset and email verification
-  - Status: Completed
-  - Result or reason: Tokens are random, stored only as SHA-256 hashes, single
-    use, and superseded when a new one is requested. Requesting a reset for an
-    unknown address returns the same 202 as a known one, so the endpoint cannot
-    be used to discover who has an account.
-  - Evidence: <JIRA-URL>/browse/BF-23, <JIRA-URL>/browse/BF-24, <REPO-URL>/pull/14
-
-- Previous commitment: Event creation, editing and publication
-  - Status: Completed
-  - Result or reason: Events are created as drafts, get a unique slug, and move
-    through publish / unpublish / cancel from the dashboard. Cancelled is
-    terminal.
-  - Evidence: <JIRA-URL>/browse/BF-27, <REPO-URL>/pull/16
-
-- Previous commitment: Ticket types with free and paid tiers
-  - Status: Completed
-  - Result or reason: Prices are `numeric(14,2)` in PostgreSQL and decimal
-    strings over the wire - no float touches money anywhere. Tiers can be
-    hidden without deletion, and sales windows are stored.
-  - Evidence: <JIRA-URL>/browse/BF-26, <REPO-URL>/pull/17
-
-- Previous commitment: Phase 2 test specification
-  - Status: Completed
-  - Result or reason: `2.md` covers the lifecycle state machine, ticket
-    management and slug de-duplication.
-  - Evidence: <REPO-URL>/blob/main/2.md
-
-### Other progress
-
-- Outcome: Cyrillic transliteration for slugs
-  - Status: Done
-  - Evidence or result: `api/internal/store/slug.go` maps Kazakh and Russian
-    letters to ASCII, so "Алматы Джаз" becomes `almaty-dzhaz` and stays a usable
-    URL. Duplicates get a numeric suffix. (BF-19)
-
-- Outcome: Organizer profiles
-  - Status: Done
-  - Evidence or result: Contact details and a simulated payout account, per SRS
-    4.1. (BF-25)
-
-- Outcome: Phase 1 signed off
-  - Status: Done
-  - Evidence or result: All Phase 1 cases pass, including the account-enumeration
-    and token-hashing checks. Recorded in `1.md`.
+  - Result: The team chose the product, the stack and how it will be deployed, and wrote the requirements down before writing any code.
+  - Evidence: branch `phase-00`, issues BF-1-BF-5 on the board.
 
 ## Commitments for the next two weeks
 
-- Commitment: Checkout that cannot oversell
-  - Owner(s): Student B
-  - Due date: October 4, 2026
-  - Success criteria: An automated test fires 30 concurrent purchases at 10
-    tickets; exactly 10 succeed, 20 receive 409, and `quantity_sold` is 10.
+- Commitment: close Ф3 - Events and ticket types
+  - Owners: all five (7 issues, 1-3 each)
+  - Due date: end of Ф3
+  - Success criteria: organizers can create events and ticket types and move an event through its lifecycle; all issues merged and CI green.
 
-- Commitment: Free registration end to end
-  - Owner(s): Student B (API), Student C (web)
-  - Due date: October 4, 2026
-  - Success criteria: A guest reserves a free ticket without payment details,
-    gets an order and a QR ticket, and the organizer sees them in the attendee list.
-
-- Commitment: Paid-sales activation gate
-  - Owner(s): Student B (API), Student D (checklist UI)
-  - Due date: October 11, 2026
-  - Success criteria: Paid tiers cannot be bought before the four-step checklist
-    is complete; free tiers on the same event stay purchasable.
-
-- Commitment: Append-only audit log
-  - Owner(s): Student A
-  - Due date: October 11, 2026
-  - Success criteria: A database trigger refuses UPDATE and DELETE on
-    `audit_logs`; attempting either raises an exception.
-
-- Commitment: Phase 3 test specification and results
-  - Owner(s): Student E
-  - Due date: October 11, 2026
-  - Success criteria: `3.md` written and executed against a running system.
+- Commitment: close Ф4 - Public catalogue and free registration
+  - Owners: all five (8 issues, 1-3 each)
+  - Due date: end of Ф4
+  - Success criteria: the first end-to-end path works: a visitor browses the public catalogue and registers for a free event; all issues merged and CI green.
 
 ## Team contributions and coordination
 
-- Team member: Student A
-  - Contribution this period: Password hashing and JWTs, register/login,
-    password reset, email verification, organizer profiles, and the console
-    email sender.
-  - Evidence: <JIRA-URL>/browse/BF-15, <JIRA-URL>/browse/BF-23, <REPO-URL>/pull/11
-  - Next responsibility: Role permissions and the append-only audit trail.
+Zones do not overlap: every file in the repository has exactly one owner (`plan/ownership.map`), so no two people edit the same file and merge conflicts cannot occur. Review runs crosswise - each person reviews a fixed teammate's pull requests.
 
-- Team member: Student B
-  - Contribution this period: Events CRUD, slug generation with transliteration,
-    the lifecycle state machine, and ticket-type management.
-  - Evidence: <JIRA-URL>/browse/BF-18, <JIRA-URL>/browse/BF-26, <REPO-URL>/pull/16
-  - Next responsibility: The checkout transaction and inventory locking - the
-    highest-risk work in the project.
+- Team member: <STUDENT-A> (S1)
+  - Contribution this period: BF-6 Add extensions and the users table; BF-7 Add config and the error envelope; BF-8 Add the pool and a health route; BF-14 Hash passwords with bcrypt; BF-15 Reject duplicate emails with 409; BF-16 Cover users, tokens and mail.
+  - Evidence: 43 files added, 10 modified, 3 deleted, 1 renamed; about +4678/-287 lines.
+  - Next responsibility: BF-22 in Ф3.
 
-- Team member: Student C
-  - Contribution this period: Wired the auth pages to the API, added the API
-    client and auth context, and built the public catalogue and event page.
-  - Evidence: <JIRA-URL>/browse/BF-20, <JIRA-URL>/browse/BF-28, <REPO-URL>/pull/15
-  - Next responsibility: The ticket selector and checkout dialog.
+- Team member: <STUDENT-B> (S2)
+  - Contribution this period: BF-9 Document the API layout; BF-17 Document the authentication endpoints.
+  - Evidence: 0 files added, 2 modified, 0 deleted, 0 renamed; about +166/-50 lines.
+  - Next responsibility: BF-23, BF-24 in Ф3.
 
-- Team member: Student D
-  - Contribution this period: The event create and edit forms, and the organizer
-    event dashboard with lifecycle actions.
-  - Evidence: <JIRA-URL>/browse/BF-21, <JIRA-URL>/browse/BF-29, <REPO-URL>/pull/18
-  - Next responsibility: The attendee and order lists, and the activation checklist.
+- Team member: <STUDENT-C> (S3)
+  - Contribution this period: BF-10 Scaffold Next.js; BF-18 Add the API client; BF-19 Add reset and verify pages.
+  - Evidence: 35 files added, 5 modified, 0 deleted, 0 renamed; about +5451/-456 lines.
+  - Next responsibility: BF-25 in Ф3.
 
-- Team member: Student E
-  - Contribution this period: Database CRUD and constraint tests, the Phase 2
-    specification, and execution of Phase 1.
-  - Evidence: <JIRA-URL>/browse/BF-22, <JIRA-URL>/browse/BF-30
-  - Next responsibility: The Phase 3 specification and the concurrency test.
+- Team member: <STUDENT-D> (S4)
+  - Contribution this period: BF-11 Add the signed-in shell; BF-20 Keep the session in the browser.
+  - Evidence: 6 files added, 0 modified, 0 deleted, 0 renamed; about +272/-0 lines.
+  - Next responsibility: BF-26, BF-27 in Ф3.
+
+- Team member: <STUDENT-E> (S5)
+  - Contribution this period: BF-12 Add Postgres to compose; BF-13 Add CI; BF-21 Add the Phase 1 specification.
+  - Evidence: 11 files added, 4 modified, 0 deleted, 0 renamed; about +587/-35 lines.
+  - Next responsibility: BF-28 in Ф3.
 
 ## Risks, blockers, and decisions needed
 
-- Risk: Checkout concurrency is the hardest correctness problem we have, and it
-  lands next sprint.
-  - Impact: Getting it wrong means selling the same seat twice, which would
-    undermine every figure the dashboard reports.
-  - Next action: Student B writes the locking strategy (`SELECT … FOR UPDATE`
-    inside the issuing transaction) as a short design note before coding, and
-    Student E writes the concurrency test first, so the test exists before the
-    implementation.
-  - Owner: Student B
-
-- Decision: Sessions in an httpOnly cookie rather than `localStorage`.
-  - Impact: Requires a small server-side proxy in Next.js, which is slightly
-    more work than reading a token in JavaScript.
-  - Next action: Accepted and implemented. The tradeoff is deliberate - a token
-    a script can read is a token an XSS bug can steal.
-  - Owner: Student C
+- None.
 
 ## Changes, reflection, and support
 
 - Scope or schedule changes: None.
-- Team reflection: Agreeing the JSON error envelope in Sprint 1 is paying off -
-  Student C has not had to special-case a single endpoint's error shape.
-  Repeat. Change: two pull requests sat unreviewed for three days; reviews are
-  now claimed at the Wednesday sync rather than left to whoever notices.
+- Team reflection: Opening every issue before the phase starts felt bureaucratic on day one and paid for itself by day three: nobody had to ask what to work on.
 - Instructor/TA help requested: None.
