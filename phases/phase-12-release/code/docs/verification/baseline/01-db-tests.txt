@@ -1,0 +1,11 @@
+BiletFlow database tests
+-----------------------------------------------------------
+PASSED 00_container       - PostgreSQL container is running and healthy
+PASSED 01_environment - 8 assertions
+PASSED 02_schema_objects - 36 assertions
+PASSED 03_user_crud - 14 assertions
+PASSED 04_constraints - 36 assertions
+PASSED 05_business_rules - 25 assertions
+PASSED 06_end_to_end_flow - 26 assertions
+-----------------------------------------------------------
+All 6 test files passed (145 assertions).
