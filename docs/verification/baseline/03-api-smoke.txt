@@ -114,7 +114,7 @@ PASS 46  PostgreSQL: order and payment refunded, refund succeeded, 0 live ticket
 PASS 47  the gate refuses a refunded ticket (HTTP 409)
 PASS 47b the scanner is told the ticket is not valid
 PASS 48  a second refund on the same order is refused (HTTP 409)
-PASS 48b the refusal is an explicit already_refunded
+PASS 48b the refusal is an explicit order_already_refunded
 PASS 49  both notifications were sent: purchase confirmation and refund completion
 PASS 50  a reset is requested for a real account (HTTP 202)
 PASS 50b the same request for an unknown address (HTTP 202)

@@ -1009,10 +1009,10 @@ if [ -n "$REFUND_ORDER_ID" ]; then
     # Refunding twice is refused rather than writing a second refund.
     request POST /api/v1/orders/"$REFUND_ORDER_ID"/refund "$TOKEN" -
     expect_status 409 "48  a second refund on the same order is refused"
-    if [ "$(json_get "$HTTP_BODY" error.code)" = "already_refunded" ]; then
-        pass "48b the refusal is an explicit already_refunded"
+    if [ "$(json_get "$HTTP_BODY" error.code)" = "order_already_refunded" ]; then
+        pass "48b the refusal is an explicit order_already_refunded"
     else
-        fail "48b refusal code is $(json_get "$HTTP_BODY" error.code), want already_refunded"
+        fail "48b refusal code is $(json_get "$HTTP_BODY" error.code), want order_already_refunded"
     fi
 
     # SRS 4.10: the attendee is notified. The outbox row proves it was raised.
@@ -1125,10 +1125,22 @@ else
 fi
 
 # --- image upload (SRS 4.2) --------------------------------------------------
-# A 1x1 PNG, written as bytes so the sniffer sees a real image.
+# A real 256x256 PNG: the API refuses banners under 200x200, so a 1x1 pixel
+# would only prove that the size check works.
 
 UPLOAD_FILE="$(mktemp -t biletflow_upload).png"
-printf '\211PNG\r\n\032\n\0\0\0\015IHDR\0\0\0\001\0\0\0\001\010\006\0\0\0\037\025\304\211\0\0\0\012IDATx\234c\0\001\0\0\005\0\001\015\012-\264\0\0\0\0IEND\256B`\202' > "$UPLOAD_FILE"
+python3 -c '
+import struct, sys, zlib
+size = 256
+rows = b"".join(b"\x00" + b"".join(bytes((x, y, 128)) for x in range(size)) for y in range(size))
+def chunk(kind, data):
+    return (struct.pack(">I", len(data)) + kind + data
+            + struct.pack(">I", zlib.crc32(kind + data) & 0xffffffff))
+png = (b"\x89PNG\r\n\x1a\n"
+       + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0))
+       + chunk(b"IDAT", zlib.compress(rows)) + chunk(b"IEND", b""))
+open(sys.argv[1], "wb").write(png)
+' "$UPLOAD_FILE"
 
 UPLOAD_BODY="$(curl -sS -X POST "${API_URL}/api/v1/uploads/images" \
     -H "Authorization: Bearer ${TOKEN}" -F "file=@${UPLOAD_FILE}" 2>/dev/null)"

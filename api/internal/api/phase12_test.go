@@ -294,6 +294,10 @@ func TestPhase12SuccessCriteria(t *testing.T) {
 		admitted := c.post("/api/v1/events/"+eventID.String()+"/check-in/manual",
 			organizer.Token, map[string]any{"ticket_id": ticketID})
 		requireStatus(t, admitted, http.StatusOK)
+		// The scanner app reads the admission from check_in, exactly as after a scan.
+		if admission, _ := admitted.Body["check_in"].(map[string]any); admission["attendee_name"] != "Aigerim Serikova" {
+			t.Errorf("manual check-in body = %s, want check_in.attendee_name", admitted.Raw)
+		}
 
 		if got := c.ticketStatus(ticketID); got != "checked_in" {
 			t.Errorf("ticket status = %q after a manual check-in, want checked_in", got)

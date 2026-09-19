@@ -93,5 +93,6 @@ func (s *Server) handleManualCheckIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, result)
+	// The same envelope as a scan, so the scanner app reads both the same way.
+	httpx.WriteJSON(w, http.StatusOK, checkInResponse{Result: "valid", CheckIn: result})
 }
