@@ -1,0 +1,102 @@
+# Неделя 2 — Идентичность (21–27 сентября)
+# <задача> <студент> <база> "<сообщение коммита>", затем файлы задачи.
+# «-путь» — файл удаляется. База — ветка недели или задача, поверх которой строится эта.
+
+BF-14 S1 week-02 "BF-14 Hash passwords with bcrypt"
+    api/go.mod
+    api/go.sum
+    api/internal/auth/password.go
+    api/internal/auth/password_test.go
+    api/internal/auth/token.go
+    api/internal/auth/token_test.go
+    api/internal/httpx/context.go
+    api/internal/httpx/httpx.go
+    api/internal/store/store.go
+    api/internal/store/users.go
+    api/internal/config/config.go
+    -api/internal/config/env.go
+
+BF-15 S1 BF-14 "BF-15 Reject duplicate emails with 409"
+    api/cmd/api/main.go
+    api/internal/api/server.go
+    api/internal/api/middleware.go
+    api/internal/api/validate.go
+    api/internal/api/handlers_auth.go
+    api/internal/api/handlers_account.go
+    api/internal/api/main_test.go
+    api/internal/api/fixtures_test.go
+    api/internal/api/auth_test.go
+    api/internal/store/store.go
+    api/internal/store/tokens.go
+    api/internal/email/email.go
+    api/internal/email/templates.go
+    api/internal/email/console.go
+    .github/workflows/ci.yml
+    -api/internal/api/handlers_health.go
+
+BF-16 S1 BF-15 "BF-16 Cover users, tokens and mail"
+    api/internal/api/account_test.go
+    api/internal/store/store_test.go
+    api/internal/email/email_test.go
+    db/tests/02_schema_objects.sql
+    db/tests/03_user_crud.sql
+    db/tests/04_constraints.sql
+    -db/tests/02_tables.sql
+    -db/tests/00_smoke.sql
+
+BF-17 S2 week-02 "BF-17 Document the authentication endpoints"
+    api/README.md
+
+BF-18 S3 week-02 "BF-18 Add the API client"
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+    web/src/lib/env.ts
+    web/src/lib/format.ts
+    web/src/app/page.tsx
+
+BF-20 S4 BF-18 "BF-20 Keep the session in the browser"
+    web/src/lib/session.ts
+    web/src/lib/auth-context.tsx
+    web/src/middleware.ts
+
+BF-19 S3 BF-20 "BF-19 Add reset and verify pages"
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+    web/src/app/layout.tsx
+    web/src/app/(auth)/layout.tsx
+    web/src/app/(auth)/login/page.tsx
+    web/src/app/(auth)/login/login-form.tsx
+    web/src/app/(auth)/register/page.tsx
+    web/src/app/(auth)/register/register-form.tsx
+    web/src/app/(auth)/forgot-password/page.tsx
+    web/src/app/(auth)/forgot-password/forgot-password-form.tsx
+    web/src/app/(auth)/reset-password/page.tsx
+    web/src/app/(auth)/reset-password/reset-password-form.tsx
+    web/src/app/(auth)/verify-email/page.tsx
+    web/src/app/(auth)/verify-email/verify-email-view.tsx
+
+BF-21 S5 week-02 "BF-21 Add the Phase 1 specification"
+    1.md
+    Makefile
+
+BF-22 S5 week-02 "BF-22 Scaffold the Expo app and sign in on the device"
+    mobile/package.json
+    mobile/package-lock.json
+    mobile/app.json
+    mobile/tsconfig.json
+    mobile/.gitignore
+    mobile/.env.example
+    mobile/README.md
+    mobile/LICENSE
+    mobile/AGENTS.md
+    mobile/CLAUDE.md
+    mobile/assets
+    mobile/lib/config.ts
+    mobile/lib/theme.ts
+    mobile/lib/types.ts
+    mobile/lib/api.ts
+    mobile/lib/session.ts
+    mobile/lib/auth-context.tsx
+    mobile/app/_layout.tsx
+    mobile/app/index.tsx
+    mobile/app/login.tsx

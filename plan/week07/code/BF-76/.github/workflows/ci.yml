@@ -1,0 +1,117 @@
+name: CI
+
+# Every suite the project has, on every push to main and every pull request.
+# Jobs are split by what they need: the database suite needs PostgreSQL, the Go
+# and web checks do not, so a lint error is reported without waiting for a
+# database to start. gofmt runs inside `make api-check`, which is why the old
+# separate lint workflow is gone.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database:
+    name: Database schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start PostgreSQL
+        run: |
+          cp .env.example .env
+          docker compose up -d
+          make wait
+      - name: Run the database tests
+        run: make test
+
+  api:
+    name: Go API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      # The API tests are integration tests: they run against a real database.
+      - name: Start PostgreSQL
+        run: |
+          cp .env.example .env
+          docker compose up -d
+          make wait
+      - name: Format, vet and test
+        run: make api-check
+
+  smoke:
+    name: API acceptance (cURL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - name: Start PostgreSQL
+        run: |
+          cp .env.example .env
+          docker compose up -d
+          make wait
+      - name: Start the API
+        run: |
+          set -a && . ./.env && set +a
+          cd api && go build -o bin/api ./cmd/api
+          ./bin/api &
+          # /health checks the database too, so this waits for a genuinely
+          # usable API rather than just an open port.
+          for _ in $(seq 1 60); do
+            curl -fsS http://localhost:8080/health && break
+            sleep 1
+          done
+      # Buys through the real HTTP stack, proves a basket bigger than the
+      # stock left is refused with nothing written, then scans the ticket in
+      # at the gate and proves a second scan is refused.
+      - name: cURL acceptance checks
+        run: make api-smoke
+
+  web:
+    name: Web app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - name: Lint, typecheck, unit tests and build
+        run: make web-check
+
+  mobile:
+    name: Scanner app typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+        working-directory: mobile
+      - name: Typecheck
+        run: make scan-check
+
+  docker:
+    name: Container images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t biletflow-api ./api
+      - run: docker build -t biletflow-web ./web

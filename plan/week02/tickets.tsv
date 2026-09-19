@@ -1,0 +1,10 @@
+ticket	who	branch	base	message	add	delete
+BF-14	S1	week-02-ansar-BF-14	origin/week-02	BF-14 Hash passwords with bcrypt	11	1
+BF-15	S1	week-02-ansar-BF-15	origin/week-02-ansar-BF-14	BF-15 Reject duplicate emails with 409	15	1
+BF-16	S1	week-02-ansar-BF-16	origin/week-02-ansar-BF-15	BF-16 Cover users, tokens and mail	6	2
+BF-17	S2	week-02-alibi-BF-17	origin/week-02	BF-17 Document the authentication endpoints	1	0
+BF-18	S3	week-02-abylay-BF-18	origin/week-02	BF-18 Add the API client	5	0
+BF-20	S4	week-02-alinur-BF-20	origin/week-02-abylay-BF-18	BF-20 Keep the session in the browser	3	0
+BF-19	S3	week-02-abylay-BF-19	origin/week-02-alinur-BF-20	BF-19 Add reset and verify pages	14	0
+BF-21	S5	week-02-olzhas-BF-21	origin/week-02	BF-21 Add the Phase 1 specification	2	0
+BF-22	S5	week-02-olzhas-BF-22	origin/week-02	BF-22 Scaffold the Expo app and sign in on the device	20	0

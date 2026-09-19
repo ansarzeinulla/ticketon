@@ -1,0 +1,15 @@
+ticket	who	branch	base	message	add	delete
+BF-23	S1	week-03-ansar-BF-23	origin/week-03	BF-23 Seed a demo organizer and event	4	1
+BF-24	S1	week-03-ansar-BF-24	origin/week-03	BF-24 Add order, ticket and attendee tables	1	0
+BF-25	S2	week-03-alibi-BF-25	origin/week-03-ansar-BF-23	BF-25 Derive a slug from the title	9	0
+BF-26	S2	week-03-alibi-BF-26	origin/week-03-alibi-BF-25	BF-26 Manage ticket types	10	0
+BF-27	S2	week-03-alibi-BF-27	origin/week-03-alibi-BF-26	BF-27 Add the checkout transaction	7	0
+BF-28	S3	week-03-abylay-BF-28	origin/week-03-alibi-BF-27	BF-28 Add the formatting dependencies	9	2
+BF-31	S4	week-03-alinur-BF-31	origin/week-03-abylay-BF-28	BF-31 Move the create form to the client	5	0
+BF-32	S4	week-03-alinur-BF-32	origin/week-03-alinur-BF-31	BF-32 Add the organizer dashboard	10	0
+BF-29	S3	week-03-abylay-BF-29	origin/week-03-alinur-BF-32	BF-29 Add the public catalogue	8	1
+BF-30	S3	week-03-abylay-BF-30	origin/week-03-abylay-BF-29	BF-30 Add the order page	7	0
+BF-33	S4	week-03-alinur-BF-33	origin/week-03-abylay-BF-30	BF-33 List orders and attendees	10	0
+BF-34	S5	week-03-olzhas-BF-34	origin/week-03	BF-34 Add the Phase 2 specification	4	1
+BF-35	S5	week-03-olzhas-BF-35	origin/week-03	BF-35 Add the Phase 3 specification	2	0
+BF-36	S5	week-03-olzhas-BF-36	origin/week-03	BF-36 List assigned events on the device	6	0

@@ -1,0 +1,11 @@
+ticket	who	branch	base	message	add	delete
+BF-68	S1	week-07-ansar-BF-68	origin/week-07	BF-68 Add campaign tables	2	0
+BF-69	S2	week-07-alibi-BF-69	origin/week-07-ansar-BF-68	BF-69 Create campaigns and promo codes	4	0
+BF-70	S2	week-07-alibi-BF-70	origin/week-07-alibi-BF-69	BF-70 Apply and cap discounts atomically	11	0
+BF-71	S3	week-07-abylay-BF-71	origin/week-07-alibi-BF-70	BF-71 Add the English dictionary	6	0
+BF-72	S3	week-07-abylay-BF-72	origin/week-07-abylay-BF-71	BF-72 Localise the attendee pages	9	0
+BF-73	S3	week-07-abylay-BF-73	origin/week-07-abylay-BF-72	BF-73 Add the language negotiation dependency	3	0
+BF-74	S4	week-07-alinur-BF-74	origin/week-07-abylay-BF-73	BF-74 Compute analytics from operational rows	10	0
+BF-75	S4	week-07-alinur-BF-75	origin/week-07-alinur-BF-74	BF-75 Localise the dashboard	12	0
+BF-B4	S4	week-07-alinur-BF-B4	origin/week-07-alinur-BF-75	BF-B4 Read the GA4 id from a server-safe module	3	0
+BF-76	S5	week-07-olzhas-BF-76	origin/week-07-alinur-BF-B4	BF-76 Add the Phase 7 specification	6	1

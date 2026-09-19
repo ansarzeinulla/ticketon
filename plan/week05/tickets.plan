@@ -1,0 +1,12 @@
+# Неделя 5 — Контроль входа (12–18 октября).
+# Порядок запуска = порядок слияния.
+# Цепочка API и мобильного: 51 → 52 → 50 → 55 → 56 → 57.
+# Цепочка веба: 54 → 53 (от первой не зависит).
+BF-51 S2 week-05 "BF-51 Reserve stock with 15-minute holds"
+BF-52 S2 BF-51 "BF-52 Charge a processing fee"
+BF-50 S1 BF-52 "BF-50 Update the money assertions for the fee"
+BF-55 S5 BF-50 "BF-55 Prepare the gate backend and a fake scan payload"
+BF-56 S5 BF-55 "BF-56 Scan and admit a ticket"
+BF-57 S5 BF-56 "BF-57 Document how to run the scanner"
+BF-54 S4 week-05 "BF-54 Add the staff manager"
+BF-53 S3 BF-54 "BF-53 Show the hold countdown at checkout"

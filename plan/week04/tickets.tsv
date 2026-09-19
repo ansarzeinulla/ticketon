@@ -1,0 +1,14 @@
+ticket	who	branch	base	message	add	delete
+BF-37	S1	week-04-ansar-BF-37	origin/week-04	BF-37 Add organizer profiles and money handling	6	0
+BF-38	S1	week-04-ansar-BF-38	origin/week-04-ansar-BF-37	BF-38 Enforce role permissions	8	2
+BF-40	S2	week-04-alibi-BF-40	origin/week-04-ansar-BF-38	BF-40 Add seat inventory	10	2
+BF-41	S2	week-04-alibi-BF-41	origin/week-04-alibi-BF-40	BF-41 Gate paid sales behind activation	22	0
+BF-39	S1	week-04-ansar-BF-39	origin/week-04-alibi-BF-41	BF-39 Send the order confirmation	9	1
+BF-42	S2	week-04-alibi-BF-42	origin/week-04-ansar-BF-39	BF-42 Embed a Unicode font for Cyrillic	13	0
+BF-43	S3	week-04-abylay-BF-43	origin/week-04-alibi-BF-42	BF-43 Show the activation notice	2	0
+BF-44	S3	week-04-abylay-BF-44	origin/week-04-abylay-BF-43	BF-44 Add the seat map and seated checkout	6	0
+BF-45	S3	week-04-abylay-BF-45	origin/week-04-abylay-BF-44	BF-45 Link the printable PDF	3	1
+BF-46	S4	week-04-alinur-BF-46	origin/week-04-abylay-BF-45	BF-46 Add the activation checklist	7	0
+BF-47	S4	week-04-alinur-BF-47	origin/week-04-alinur-BF-46	BF-47 Show ticket status per order	4	0
+BF-48	S5	week-04-olzhas-BF-48	origin/week-04	BF-48 Prove checkout cannot oversell	4	0
+BF-49	S5	week-04-olzhas-BF-49	origin/week-04	BF-49 Add the Phase 4 specification	2	0

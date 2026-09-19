@@ -1,0 +1,14 @@
+ticket	who	branch	base	message	add	delete
+BF-58	S1	week-06-ansar-BF-58	origin/week-06	BF-58 Add refund, support and report tables	1	1
+BF-61	S2	week-06-alibi-BF-61	origin/week-06	BF-61 Refund an order atomically	10	0
+BF-66	S5	week-06-olzhas-BF-66	origin/week-06-alibi-BF-61	BF-66 Refuse a refunded ticket at the gate	2	0
+BF-62	S2	week-06-alibi-BF-62	origin/week-06-olzhas-BF-66	BF-62 Expose the rows the admin search needs	7	0
+BF-B1	S5	week-06-olzhas-BF-B1	origin/week-06-alibi-BF-62	BF-B1 Keep the check-in record when a ticket is voided	1	0
+BF-59	S1	week-06-ansar-BF-59	origin/week-06-olzhas-BF-B1	BF-59 Add the report queue and settings	16	0
+BF-60	S1	week-06-ansar-BF-60	origin/week-06-ansar-BF-59	BF-60 Give every conflict its own error code	10	0
+BF-64	S3	week-06-abylay-BF-64	origin/week-06-ansar-BF-60	BF-64 Point the client at the proxy	9	0
+BF-B2	S4	week-06-alinur-BF-B2	origin/week-06-abylay-BF-64	BF-B2 Move the session into an httpOnly cookie	1	1
+BF-B3	S4	week-06-alinur-BF-B3	origin/week-06-alinur-BF-B2	BF-B3 Rename middleware to proxy for Next 16	2	1
+BF-63	S3	week-06-abylay-BF-63	origin/week-06-alinur-BF-B3	BF-63 Add the support widget to the order page	5	2
+BF-65	S4	week-06-alinur-BF-65	origin/week-06-abylay-BF-63	BF-65 Add the admin portal	26	1
+BF-67	S5	week-06-olzhas-BF-67	origin/week-06-alinur-BF-65	BF-67 Add the Phase 6 specification	7	0

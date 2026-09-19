@@ -1,0 +1,17 @@
+# Неделя 6 — Возвраты, поддержка, админ (19–25 октября).
+# Порядок запуска = порядок слияния. Одна цепочка:
+# 61 → 66 → 62 → B1 → 59 → 60 → 64 → B2 → B3 → 63 → 65 → 67.
+# BF-58 независима.
+BF-58 S1 week-06 "BF-58 Add refund, support and report tables"
+BF-61 S2 week-06 "BF-61 Refund an order atomically"
+BF-66 S5 BF-61 "BF-66 Refuse a refunded ticket at the gate"
+BF-62 S2 BF-66 "BF-62 Expose the rows the admin search needs"
+BF-B1 S5 BF-62 "BF-B1 Keep the check-in record when a ticket is voided"
+BF-59 S1 BF-B1 "BF-59 Add the report queue and settings"
+BF-60 S1 BF-59 "BF-60 Give every conflict its own error code"
+BF-64 S3 BF-60 "BF-64 Point the client at the proxy"
+BF-B2 S4 BF-64 "BF-B2 Move the session into an httpOnly cookie"
+BF-B3 S4 BF-B2 "BF-B3 Rename middleware to proxy for Next 16"
+BF-63 S3 BF-B3 "BF-63 Add the support widget to the order page"
+BF-65 S4 BF-63 "BF-65 Add the admin portal"
+BF-67 S5 BF-65 "BF-67 Add the Phase 6 specification"

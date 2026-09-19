@@ -1,0 +1,132 @@
+# Неделя 6 — собрано tools/gitpack.py из рабочего репозитория.
+# <задача> <студент> <база> "<сообщение коммита>", затем файлы задачи;
+# «-путь» — файл удаляется.
+
+BF-58 S1 week-06 "BF-58 Add refund, support and report tables"
+    db/tests/06_end_to_end_flow.sql
+    -db/tests/07_temp_checks.sql
+
+BF-61 S2 week-06 "BF-61 Refund an order atomically"
+    api/internal/api/checkout_test.go
+    api/internal/api/handlers_attendees.go
+    api/internal/api/handlers_refunds.go
+    api/internal/api/notify.go
+    api/internal/api/refunds_test.go
+    api/internal/api/server.go
+    api/internal/api/validate.go
+    api/internal/email/templates.go
+    api/internal/store/guests.go
+    api/internal/store/refunds.go
+
+BF-66 S5 BF-61 "BF-66 Refuse a refunded ticket at the gate"
+    api/internal/api/checkin_test.go
+    api/internal/store/checkin.go
+
+BF-62 S2 BF-66 "BF-62 Expose the rows the admin search needs"
+    api/internal/api/cancellations_test.go
+    api/internal/api/handlers_cancellations.go
+    api/internal/api/notify.go
+    api/internal/api/server.go
+    api/internal/email/templates.go
+    api/internal/store/cancellations.go
+    api/internal/store/refunds.go
+
+BF-B1 S5 BF-62 "BF-B1 Keep the check-in record when a ticket is voided"
+    api/internal/api/checkin_test.go
+
+BF-59 S1 BF-B1 "BF-59 Add the report queue and settings"
+    api/internal/api/activation_test.go
+    api/internal/api/admin_users_test.go
+    api/internal/api/handlers_activation.go
+    api/internal/api/handlers_admin.go
+    api/internal/api/handlers_admin_portal.go
+    api/internal/api/handlers_admin_users.go
+    api/internal/api/handlers_checkout.go
+    api/internal/api/handlers_events.go
+    api/internal/api/handlers_moderation.go
+    api/internal/api/handlers_public.go
+    api/internal/api/moderation_test.go
+    api/internal/api/server.go
+    api/internal/store/activation.go
+    api/internal/store/admin.go
+    api/internal/store/events.go
+    api/internal/store/moderation.go
+
+BF-60 S1 BF-59 "BF-60 Give every conflict its own error code"
+    api/internal/api/handlers_activation.go
+    api/internal/api/handlers_checkout.go
+    api/internal/api/handlers_events.go
+    api/internal/api/holds_test.go
+    api/internal/api/notifications_test.go
+    api/internal/api/notify.go
+    api/internal/email/templates.go
+    api/internal/store/checkout.go
+    api/internal/store/events.go
+    api/internal/store/holds.go
+
+BF-64 S3 BF-60 "BF-64 Point the client at the proxy"
+    web/src/app/api/auth/login/route.ts
+    web/src/app/api/auth/logout/route.ts
+    web/src/app/api/auth/me/route.ts
+    web/src/app/api/auth/register/route.ts
+    web/src/app/api/proxy/[...path]/route.ts
+    web/src/lib/api.ts
+    web/src/lib/auth-context.tsx
+    web/src/lib/server-session.ts
+    web/src/lib/types.ts
+
+BF-B2 S4 BF-64 "BF-B2 Move the session into an httpOnly cookie"
+    -web/src/app/api/health/route.ts
+    web/src/lib/session.ts
+
+BF-B3 S4 BF-B2 "BF-B3 Rename middleware to proxy for Next 16"
+    web/src/app/(app)/layout.tsx
+    -web/src/middleware.ts
+    web/src/proxy.ts
+
+BF-63 S3 BF-B3 "BF-63 Add the support widget to the order page"
+    web/src/app/orders/[id]/page.tsx
+    web/src/components/event-card.tsx
+    -web/src/components/order-list.tsx
+    web/src/components/order-support.tsx
+    web/src/components/support-thread.tsx
+    -web/src/components/ui/toast.tsx
+    web/src/lib/support.ts
+
+BF-65 S4 BF-63 "BF-65 Add the admin portal"
+    api/internal/api/activation_test.go
+    api/internal/api/checkin_test.go
+    api/internal/api/handlers_attendees.go
+    api/internal/api/handlers_checkin.go
+    api/internal/api/handlers_support.go
+    api/internal/api/notifications_test.go
+    api/internal/api/notify.go
+    api/internal/api/portal_test.go
+    api/internal/api/server.go
+    api/internal/api/support_test.go
+    api/internal/email/templates.go
+    api/internal/store/attendees.go
+    -api/internal/store/guests.go
+    api/internal/store/support.go
+    web/src/app/(app)/admin/admin-portal.tsx
+    web/src/app/(app)/admin/page.tsx
+    web/src/app/(app)/admin/reports/page.tsx
+    web/src/app/(app)/admin/reports/reports-queue.tsx
+    web/src/app/(app)/dashboard/events/[id]/event-detail.tsx
+    web/src/app/events/[slug]/page.tsx
+    web/src/components/attendee-list.tsx
+    web/src/components/moderation-action.tsx
+    web/src/components/order-manager.tsx
+    web/src/components/site-header.tsx
+    web/src/components/support-inbox.tsx
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+
+BF-67 S5 BF-65 "BF-67 Add the Phase 6 specification"
+    5.md
+    6.md
+    README.md
+    api/README.md
+    db/seed/01_demo_data.sql
+    mobile/app/attendees/[eventId].tsx
+    mobile/lib/types.ts

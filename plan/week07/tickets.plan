@@ -1,0 +1,13 @@
+# Неделя 7 — Аналитика, кампании, i18n (26 октября – 1 ноября).
+# Порядок запуска = порядок слияния. Одна цепочка:
+# 68 → 69 → 70 → 71 → 72 → 73 → 74 → 75 → B4 → 76.
+BF-68 S1 week-07 "BF-68 Add campaign tables"
+BF-69 S2 BF-68 "BF-69 Create campaigns and promo codes"
+BF-70 S2 BF-69 "BF-70 Apply and cap discounts atomically"
+BF-71 S3 BF-70 "BF-71 Add the English dictionary"
+BF-72 S3 BF-71 "BF-72 Localise the attendee pages"
+BF-73 S3 BF-72 "BF-73 Add the language negotiation dependency"
+BF-74 S4 BF-73 "BF-74 Compute analytics from operational rows"
+BF-75 S4 BF-74 "BF-75 Localise the dashboard"
+BF-B4 S4 BF-75 "BF-B4 Read the GA4 id from a server-safe module"
+BF-76 S5 BF-B4 "BF-76 Add the Phase 7 specification"

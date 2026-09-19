@@ -1,0 +1,132 @@
+# Неделя 3 — События, каталог и регистрация (28 сентября – 4 октября)
+# <задача> <студент> <база> "<сообщение коммита>", затем файлы задачи.
+# «-путь» — файл удаляется. База — ветка недели или задача, поверх которой строится эта.
+#
+# Одна цепочка на неделю: 23 → 25 → 26 → 27 → 28 → 31 → 32 → 29 → 30 → 33.
+# Веб идёт после API, потому что BF-33 (S4) трогает и то и другое.
+# Независимы: BF-24, BF-34, BF-35, BF-36.
+
+BF-23 S1 week-03 "BF-23 Seed a demo organizer and event"
+    api/internal/api/validate.go
+    api/internal/config/config.go
+    db/seed/01_demo_data.sql
+    .gitignore
+    -db/init/03_sample.sql
+
+BF-24 S1 week-03 "BF-24 Add order, ticket and attendee tables"
+    db/tests/05_business_rules.sql
+
+BF-25 S2 BF-23 "BF-25 Derive a slug from the title"
+    api/go.mod
+    api/go.sum
+    api/internal/store/events.go
+    api/internal/store/slug.go
+    api/internal/store/slug_test.go
+    api/internal/api/handlers_events.go
+    api/internal/api/server.go
+    api/internal/api/main_test.go
+    api/internal/api/events_test.go
+
+BF-26 S2 BF-25 "BF-26 Manage ticket types"
+    api/go.mod
+    api/go.sum
+    api/internal/store/ticket_types.go
+    api/internal/api/handlers_ticket_types.go
+    api/internal/api/handlers_public.go
+    api/internal/api/handlers_uploads.go
+    api/internal/api/ticket_types_test.go
+    api/internal/api/server.go
+    api/internal/api/main_test.go
+    api/README.md
+
+BF-27 S2 BF-26 "BF-27 Add the checkout transaction"
+    api/internal/store/checkout.go
+    api/internal/store/inventory.go
+    api/internal/api/handlers_checkout.go
+    api/internal/api/handlers_inventory.go
+    api/internal/api/checkout_test.go
+    api/internal/api/server.go
+    api/README.md
+
+BF-28 S3 BF-27 "BF-28 Add the formatting dependencies"
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+    web/src/lib/money.ts
+    web/src/lib/money.test.ts
+    web/src/lib/datetime.ts
+    web/src/lib/datetime.test.ts
+    web/src/components/ui/status-badge.tsx
+    web/src/components/ui/toast.tsx
+    web/src/app/page.tsx
+    -web/src/lib/env.ts
+    -web/src/lib/format.ts
+
+BF-31 S4 BF-28 "BF-31 Move the create form to the client"
+    web/src/app/(app)/events/new/page.tsx
+    web/src/app/(app)/events/new/create-event-form.tsx
+    web/src/components/event-form-fields.tsx
+    web/src/components/image-upload.tsx
+    web/src/lib/auth-context.tsx
+
+BF-32 S4 BF-31 "BF-32 Add the organizer dashboard"
+    web/src/app/(app)/layout.tsx
+    web/src/app/(app)/dashboard/page.tsx
+    web/src/app/(app)/dashboard/events/[id]/page.tsx
+    web/src/app/(app)/dashboard/events/[id]/event-detail.tsx
+    web/src/app/(app)/dashboard/events/[id]/edit/page.tsx
+    web/src/app/(app)/dashboard/events/[id]/edit/edit-event-form.tsx
+    web/src/components/event-card.tsx
+    web/src/components/ticket-type-manager.tsx
+    web/src/components/site-header.tsx
+    web/src/middleware.ts
+
+BF-29 S3 BF-32 "BF-29 Add the public catalogue"
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+    web/src/app/page.tsx
+    web/src/app/events/page.tsx
+    web/src/app/events/layout.tsx
+    web/src/app/events/[slug]/page.tsx
+    web/src/app/(auth)/login/login-form.tsx
+    web/src/app/(auth)/register/register-form.tsx
+    -web/src/lib/mock-data.ts
+
+BF-30 S3 BF-29 "BF-30 Add the order page"
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+    web/src/app/events/[slug]/page.tsx
+    web/src/app/events/[slug]/ticket-selector.tsx
+    web/src/components/checkout-dialog.tsx
+    web/src/components/order-list.tsx
+    web/src/app/orders/[id]/page.tsx
+
+BF-33 S4 BF-30 "BF-33 List orders and attendees"
+    api/internal/store/guests.go
+    api/internal/api/handlers_attendees.go
+    api/internal/api/server.go
+    api/internal/api/checkout_test.go
+    api/README.md
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+    web/src/components/order-manager.tsx
+    web/src/components/attendee-list.tsx
+    web/src/app/(app)/dashboard/events/[id]/event-detail.tsx
+
+BF-34 S5 week-03 "BF-34 Add the Phase 2 specification"
+    2.md
+    1.md
+    Makefile
+    docker-compose.yml
+    -docs/schema-draft.md
+
+BF-35 S5 week-03 "BF-35 Add the Phase 3 specification"
+    3.md
+    README.md
+
+BF-36 S5 week-03 "BF-36 List assigned events on the device"
+    mobile/app/_layout.tsx
+    mobile/app/index.tsx
+    mobile/app/events.tsx
+    mobile/app/login.tsx
+    mobile/lib/api.ts
+    mobile/lib/types.ts

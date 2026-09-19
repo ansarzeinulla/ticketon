@@ -1,0 +1,131 @@
+# Неделя 4 — собрано tools/gitpack.py из рабочего репозитория.
+# <задача> <студент> <база> "<сообщение коммита>", затем файлы задачи;
+# «-путь» — файл удаляется.
+
+BF-37 S1 week-04 "BF-37 Add organizer profiles and money handling"
+    api/internal/api/handlers_profile.go
+    api/internal/api/money.go
+    api/internal/api/profile_test.go
+    api/internal/api/server.go
+    api/internal/store/profiles.go
+    db/seed/01_demo_data.sql
+
+BF-38 S1 BF-37 "BF-38 Enforce role permissions"
+    api/internal/api/events_test.go
+    -api/internal/api/fixtures_test.go
+    -api/internal/api/handlers_dev.go
+    api/internal/api/handlers_events.go
+    api/internal/api/handlers_ticket_types.go
+    api/internal/api/main_test.go
+    api/internal/api/server.go
+    api/internal/store/audit.go
+    api/internal/testutil/testdb.go
+    db/tests/07_temp_checks.sql
+
+BF-40 S2 BF-38 "BF-40 Add seat inventory"
+    api/README.md
+    api/internal/api/checkout_test.go
+    api/internal/api/handlers_checkout.go
+    -api/internal/api/handlers_inventory.go
+    api/internal/api/handlers_seating.go
+    api/internal/api/handlers_ticket_types.go
+    api/internal/api/seating_test.go
+    api/internal/api/server.go
+    api/internal/store/checkout.go
+    -api/internal/store/inventory.go
+    api/internal/store/seating.go
+    api/internal/store/ticket_types.go
+
+BF-41 S2 BF-40 "BF-41 Gate paid sales behind activation"
+    api/go.mod
+    api/go.sum
+    api/internal/api/activation_test.go
+    api/internal/api/checkout_test.go
+    api/internal/api/handlers_activation.go
+    api/internal/api/handlers_checkout.go
+    api/internal/api/handlers_public.go
+    api/internal/api/handlers_tickets.go
+    api/internal/api/main_test.go
+    api/internal/api/profile_test.go
+    api/internal/api/seating_test.go
+    api/internal/api/server.go
+    api/internal/api/tickets_test.go
+    api/internal/store/activation.go
+    api/internal/store/checkout.go
+    api/internal/store/seating.go
+    api/internal/store/tickets.go
+    api/internal/ticketpdf/extract_test.go
+    api/internal/ticketpdf/qr.go
+    api/internal/ticketpdf/render.go
+    api/internal/ticketpdf/text.go
+    api/internal/ticketpdf/ticketpdf_test.go
+
+BF-39 S1 BF-41 "BF-39 Send the order confirmation"
+    api/internal/api/handlers_account.go
+    api/internal/api/handlers_checkout.go
+    api/internal/api/notifications_test.go
+    api/internal/api/notify.go
+    api/internal/api/server.go
+    -api/internal/email/console.go
+    api/internal/email/email.go
+    api/internal/email/email_test.go
+    api/internal/email/templates.go
+    api/internal/store/notifications.go
+
+BF-42 S2 BF-39 "BF-42 Embed a Unicode font for Cyrillic"
+    api/README.md
+    api/internal/api/handlers_calendar.go
+    api/internal/api/server.go
+    api/internal/calendar/ics.go
+    api/internal/calendar/ics_test.go
+    api/internal/ticketpdf/extract_test.go
+    api/internal/ticketpdf/fonts.go
+    api/internal/ticketpdf/fonts/DejaVuSansCondensed-Bold.ttf
+    api/internal/ticketpdf/fonts/DejaVuSansCondensed.ttf
+    api/internal/ticketpdf/fonts/LICENSE-fpdf.txt
+    api/internal/ticketpdf/render.go
+    api/internal/ticketpdf/text.go
+    api/internal/ticketpdf/ticketpdf_test.go
+
+BF-43 S3 BF-42 "BF-43 Show the activation notice"
+    web/src/app/events/[slug]/page.tsx
+    web/src/lib/types.ts
+
+BF-44 S3 BF-43 "BF-44 Add the seat map and seated checkout"
+    web/src/app/events/[slug]/page.tsx
+    web/src/components/seat-checkout.tsx
+    web/src/components/seat-map.tsx
+    web/src/components/seated-purchase.tsx
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+
+BF-45 S3 BF-44 "BF-45 Link the printable PDF"
+    web/src/app/orders/[id]/page.tsx
+    web/src/components/ticket-card.tsx
+    -web/src/components/ui/spinner.tsx
+    web/src/lib/api.ts
+
+BF-46 S4 BF-45 "BF-46 Add the activation checklist"
+    web/src/app/(app)/dashboard/events/[id]/event-detail.tsx
+    web/src/app/(app)/dashboard/profile/page.tsx
+    web/src/app/(app)/dashboard/profile/profile-form.tsx
+    web/src/components/activation-checklist.tsx
+    web/src/components/site-header.tsx
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+
+BF-47 S4 BF-46 "BF-47 Show ticket status per order"
+    api/internal/api/checkout_test.go
+    api/internal/store/guests.go
+    web/src/components/order-manager.tsx
+    web/src/lib/types.ts
+
+BF-48 S5 week-04 "BF-48 Prove checkout cannot oversell"
+    .github/workflows/ci.yml
+    3.md
+    Makefile
+    api/scripts/smoke_test.sh
+
+BF-49 S5 week-04 "BF-49 Add the Phase 4 specification"
+    4.md
+    README.md

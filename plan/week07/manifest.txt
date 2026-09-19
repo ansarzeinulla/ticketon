@@ -1,0 +1,90 @@
+# Неделя 7 — собрано tools/gitpack.py из рабочего репозитория.
+# <задача> <студент> <база> "<сообщение коммита>", затем файлы задачи;
+# «-путь» — файл удаляется.
+
+BF-68 S1 week-07 "BF-68 Add campaign tables"
+    api/internal/api/money.go
+    db/seed/01_demo_data.sql
+
+BF-69 S2 BF-68 "BF-69 Create campaigns and promo codes"
+    api/internal/api/handlers_campaigns.go
+    api/internal/api/handlers_promo.go
+    api/internal/api/server.go
+    api/internal/store/campaigns.go
+
+BF-70 S2 BF-69 "BF-70 Apply and cap discounts atomically"
+    api/internal/api/campaigns_test.go
+    api/internal/api/checkin_test.go
+    api/internal/api/handlers_checkout.go
+    api/internal/api/handlers_events.go
+    api/internal/api/handlers_holds.go
+    api/internal/api/holds_test.go
+    api/internal/store/admin.go
+    api/internal/store/checkout.go
+    api/internal/store/duplicate.go
+    api/internal/store/events.go
+    api/internal/store/holds.go
+
+BF-71 S3 BF-70 "BF-71 Add the English dictionary"
+    web/src/app/layout.tsx
+    web/src/lib/i18n/config.ts
+    web/src/lib/i18n/context.tsx
+    web/src/lib/i18n/dictionaries.ts
+    web/src/lib/i18n/server.ts
+    web/src/lib/i18n/translate.ts
+
+BF-72 S3 BF-71 "BF-72 Localise the attendee pages"
+    web/src/app/events/[slug]/page.tsx
+    web/src/app/events/[slug]/ticket-selector.tsx
+    web/src/app/events/page.tsx
+    web/src/app/orders/[id]/page.tsx
+    web/src/components/checkout-dialog.tsx
+    web/src/components/promo-box.tsx
+    web/src/components/ticket-card.tsx
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+
+BF-73 S3 BF-72 "BF-73 Add the language negotiation dependency"
+    web/src/app/api/locale/route.ts
+    web/src/app/events/layout.tsx
+    web/src/components/language-switcher.tsx
+
+BF-74 S4 BF-73 "BF-74 Compute analytics from operational rows"
+    api/internal/api/analytics_test.go
+    api/internal/api/cancellations_test.go
+    api/internal/api/handlers_analytics.go
+    api/internal/api/refunds_test.go
+    api/internal/api/server.go
+    api/internal/store/analytics.go
+    web/src/app/(app)/dashboard/events/[id]/event-detail.tsx
+    web/src/app/(app)/dashboard/page.tsx
+    web/src/components/event-card.tsx
+    web/src/components/stats-panel.tsx
+
+BF-75 S4 BF-74 "BF-75 Localise the dashboard"
+    web/src/app/(app)/dashboard/events/[id]/event-detail.tsx
+    web/src/app/events/[slug]/page.tsx
+    web/src/app/events/[slug]/ticket-selector.tsx
+    web/src/app/layout.tsx
+    web/src/components/analytics-scripts.tsx
+    web/src/components/campaign-manager.tsx
+    web/src/components/checkout-dialog.tsx
+    web/src/components/event-analytics-tracker.tsx
+    web/src/components/event-timeline.tsx
+    web/src/components/seat-checkout.tsx
+    web/src/components/seated-purchase.tsx
+    web/src/lib/analytics.ts
+
+BF-B4 S4 BF-75 "BF-B4 Read the GA4 id from a server-safe module"
+    web/src/components/analytics-scripts.tsx
+    web/src/lib/analytics-config.ts
+    web/src/lib/analytics.ts
+
+BF-76 S5 BF-B4 "BF-76 Add the Phase 7 specification"
+    .github/workflows/ci.yml
+    -.github/workflows/lint.yml
+    6.md
+    7.md
+    Makefile
+    README.md
+    api/README.md

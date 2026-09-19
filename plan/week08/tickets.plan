@@ -1,0 +1,15 @@
+# Неделя 8 — Релизная форма (2–8 ноября).
+# Порядок запуска = порядок слияния.
+# Цепочка API и мобильного: 77 → B5 → B6 → 78 → B8 → B10 → 83.
+# Цепочка веба: 79 → 80 → 81. BF-82 независима.
+BF-77 S1 week-08 "BF-77 Count text limits in the remaining handlers"
+BF-B5 S1 BF-77 "BF-B5 Stop sharing notification state on the server"
+BF-B6 S1 BF-B5 "BF-B6 Make the seed re-runnable after a purchase"
+BF-78 S2 BF-B6 "BF-78 Cut Cyrillic text by characters on the ticket"
+BF-B8 S2 BF-78 "BF-B8 Name the refund conflict"
+BF-B10 S5 BF-B8 "BF-B10 Name the check-in reversal conflict"
+BF-83 S5 BF-B10 "BF-83 Point the scanner at the queue"
+BF-82 S5 week-08 "BF-82 Add the Phase 8, 9 and 10 specifications"
+BF-79 S3 week-08 "BF-79 Localise the remaining attendee screens"
+BF-80 S4 BF-79 "BF-80 Show reserved stock"
+BF-81 S4 BF-80 "BF-81 Localise the remaining dashboard screens"

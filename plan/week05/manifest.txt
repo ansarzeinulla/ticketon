@@ -1,0 +1,87 @@
+# Неделя 5 — собрано tools/gitpack.py из рабочего репозитория.
+# <задача> <студент> <база> "<сообщение коммита>", затем файлы задачи;
+# «-путь» — файл удаляется.
+
+BF-51 S2 week-05 "BF-51 Reserve stock with 15-minute holds"
+    api/cmd/api/main.go
+    api/internal/api/handlers_checkout.go
+    api/internal/api/handlers_holds.go
+    api/internal/api/holds_test.go
+    api/internal/api/seating_test.go
+    api/internal/api/server.go
+    api/internal/store/checkout.go
+    api/internal/store/holds.go
+    api/internal/store/seating.go
+
+BF-52 S2 BF-51 "BF-52 Charge a processing fee"
+    api/README.md
+    api/internal/api/checkout_test.go
+    api/internal/api/holds_test.go
+    api/internal/store/checkout.go
+    api/internal/store/holds.go
+    api/scripts/smoke_test.sh
+
+BF-50 S1 BF-52 "BF-50 Update the money assertions for the fee"
+    .env.example
+    api/internal/api/main_test.go
+    api/internal/api/notifications_test.go
+    api/internal/api/server.go
+    api/internal/config/config.go
+    api/internal/config/config_test.go
+
+BF-55 S5 BF-50 "BF-55 Prepare the gate backend and a fake scan payload"
+    api/internal/api/handlers_staff.go
+    api/internal/api/server.go
+    api/internal/store/staff.go
+    mobile/lib/mock-tickets.ts
+
+BF-56 S5 BF-55 "BF-56 Scan and admit a ticket"
+    api/internal/api/checkin_test.go
+    api/internal/api/handlers_checkin.go
+    api/internal/api/server.go
+    api/internal/store/checkin.go
+    api/internal/store/notifications.go
+    api/internal/store/staff.go
+    mobile/app.json
+    mobile/app/_layout.tsx
+    mobile/app/events.tsx
+    mobile/app/scanner.tsx
+    mobile/components/ScanResultOverlay.tsx
+    mobile/lib/api.ts
+    -mobile/lib/mock-tickets.ts
+    mobile/lib/types.ts
+    mobile/package-lock.json
+    mobile/package.json
+
+BF-57 S5 BF-56 "BF-57 Document how to run the scanner"
+    .github/workflows/ci.yml
+    3.md
+    4.md
+    5.md
+    Makefile
+    README.md
+    api/internal/api/checkin_test.go
+    api/internal/api/handlers_attendees.go
+    api/internal/api/handlers_checkin.go
+    api/internal/api/server.go
+    api/scripts/smoke_test.sh
+    db/seed/01_demo_data.sql
+    mobile/README.md
+    mobile/app/attendees/[eventId].tsx
+    mobile/app/events.tsx
+    mobile/app/scanner.tsx
+    mobile/lib/api.ts
+    mobile/lib/types.ts
+
+BF-54 S4 week-05 "BF-54 Add the staff manager"
+    web/src/app/(app)/dashboard/events/[id]/event-detail.tsx
+    web/src/components/staff-manager.tsx
+    web/src/lib/api.ts
+    web/src/lib/types.ts
+
+BF-53 S3 BF-54 "BF-53 Show the hold countdown at checkout"
+    web/src/components/seat-checkout.tsx
+    web/src/components/seat-map.tsx
+    web/src/components/seated-purchase.tsx
+    web/src/lib/api.ts
+    web/src/lib/types.ts

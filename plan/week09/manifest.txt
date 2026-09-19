@@ -1,0 +1,57 @@
+# Неделя 9 — собрано tools/gitpack.py из рабочего репозитория.
+# <задача> <студент> <база> "<сообщение коммита>", затем файлы задачи;
+# «-путь» — файл удаляется.
+
+BF-84 S1 week-09 "BF-84 Say required instead of too short"
+    api/internal/api/routing_test.go
+
+BF-85 S2 week-09 "BF-85 Refuse to publish an event that has ended"
+    api/internal/api/events_test.go
+
+BF-87 S3 week-09 "BF-87 Add the test runner dependencies"
+    web/src/components/ui/field.test.tsx
+    web/vitest.config.mts
+    web/vitest.setup.ts
+
+BF-89 S5 week-09 "BF-89 Run the phase specifications and record results"
+    api/internal/api/account_test.go
+    api/internal/api/criteria_test.go
+    api/internal/api/phase10_test.go
+    api/internal/api/phase12_test.go
+    api/internal/api/portal_test.go
+    docs/verification/PROGRESS.md
+    docs/verification/RESULTS.md
+    docs/verification/baseline/00-SUMMARY.md
+    docs/verification/baseline/01-db-tests.txt
+    docs/verification/baseline/02-api-check.txt
+    docs/verification/baseline/03-api-smoke.txt
+    docs/verification/baseline/04-web-lint.txt
+    docs/verification/baseline/05-scan-check.txt
+    docs/verification/baseline/06-web-typecheck.txt
+    docs/verification/evidence/android-camera-live.png
+    docs/verification/evidence/android-event-selector.png
+    docs/verification/evidence/scanner-already-used.png
+    docs/verification/evidence/scanner-attendee-search-undo.png
+    docs/verification/evidence/scanner-campaign-qr-refused.png
+    docs/verification/evidence/scanner-event-selector.png
+    docs/verification/traceability.md
+
+BF-90 S5 BF-87 "BF-90 Correct the specifications after the run"
+    .github/workflows/ci.yml
+    .gitignore
+    api/.dockerignore
+    api/Dockerfile
+    api/scripts/smoke_test.sh
+    docker-compose.yml
+    web/.dockerignore
+    web/Dockerfile
+    web/e2e/analytics-and-gate.spec.ts
+    web/e2e/auth.spec.ts
+    web/e2e/fixtures.ts
+    web/e2e/free-event.spec.ts
+    web/e2e/paid-checkout.spec.ts
+    web/e2e/support-and-moderation.spec.ts
+    web/playwright.config.ts
+
+BF-91 S5 week-09 "BF-91 Add the Postman collection"
+    docs/biletflow-api.postman_collection.json

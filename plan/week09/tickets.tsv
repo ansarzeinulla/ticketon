@@ -1,0 +1,7 @@
+ticket	who	branch	base	message	add	delete
+BF-84	S1	week-09-ansar-BF-84	origin/week-09	BF-84 Say required instead of too short	1	0
+BF-85	S2	week-09-alibi-BF-85	origin/week-09	BF-85 Refuse to publish an event that has ended	1	0
+BF-87	S3	week-09-abylay-BF-87	origin/week-09	BF-87 Add the test runner dependencies	3	0
+BF-89	S5	week-09-olzhas-BF-89	origin/week-09	BF-89 Run the phase specifications and record results	21	0
+BF-90	S5	week-09-olzhas-BF-90	origin/week-09-abylay-BF-87	BF-90 Correct the specifications after the run	15	0
+BF-91	S5	week-09-olzhas-BF-91	origin/week-09	BF-91 Add the Postman collection	1	0

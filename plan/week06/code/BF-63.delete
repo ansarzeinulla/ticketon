@@ -1,0 +1,3 @@
+# пути, которые задача удаляет (или старые имена переименованных)
+web/src/components/order-list.tsx
+web/src/components/ui/toast.tsx

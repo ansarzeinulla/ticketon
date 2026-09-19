@@ -1,0 +1,9 @@
+ticket	who	branch	base	message	add	delete
+BF-51	S2	week-05-alibi-BF-51	origin/week-05	BF-51 Reserve stock with 15-minute holds	9	0
+BF-52	S2	week-05-alibi-BF-52	origin/week-05-alibi-BF-51	BF-52 Charge a processing fee	6	0
+BF-50	S1	week-05-ansar-BF-50	origin/week-05-alibi-BF-52	BF-50 Update the money assertions for the fee	6	0
+BF-55	S5	week-05-olzhas-BF-55	origin/week-05-ansar-BF-50	BF-55 Prepare the gate backend and a fake scan payload	4	0
+BF-56	S5	week-05-olzhas-BF-56	origin/week-05-olzhas-BF-55	BF-56 Scan and admit a ticket	15	1
+BF-57	S5	week-05-olzhas-BF-57	origin/week-05-olzhas-BF-56	BF-57 Document how to run the scanner	18	0
+BF-54	S4	week-05-alinur-BF-54	origin/week-05	BF-54 Add the staff manager	4	0
+BF-53	S3	week-05-abylay-BF-53	origin/week-05-alinur-BF-54	BF-53 Show the hold countdown at checkout	5	0

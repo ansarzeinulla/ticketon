@@ -1,0 +1,16 @@
+# Неделя 4 — Платные продажи и билеты (5–11 октября).
+# Порядок запуска = порядок слияния. Одна цепочка: 37 → 38 → 40 → 41 → 39 → 42 → 43 → 44 → 45 → 46 → 47.
+# BF-48 и BF-49 независимы.
+BF-37 S1 week-04 "BF-37 Add organizer profiles and money handling"
+BF-38 S1 BF-37 "BF-38 Enforce role permissions"
+BF-40 S2 BF-38 "BF-40 Add seat inventory"
+BF-41 S2 BF-40 "BF-41 Gate paid sales behind activation"
+BF-39 S1 BF-41 "BF-39 Send the order confirmation"
+BF-42 S2 BF-39 "BF-42 Embed a Unicode font for Cyrillic"
+BF-43 S3 BF-42 "BF-43 Show the activation notice"
+BF-44 S3 BF-43 "BF-44 Add the seat map and seated checkout"
+BF-45 S3 BF-44 "BF-45 Link the printable PDF"
+BF-46 S4 BF-45 "BF-46 Add the activation checklist"
+BF-47 S4 BF-46 "BF-47 Show ticket status per order"
+BF-48 S5 week-04 "BF-48 Prove checkout cannot oversell"
+BF-49 S5 week-04 "BF-49 Add the Phase 4 specification"

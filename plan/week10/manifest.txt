@@ -1,0 +1,13 @@
+# Неделя 10 — собрано tools/gitpack.py из рабочего репозитория.
+# <задача> <студент> <база> "<сообщение коммита>", затем файлы задачи;
+# «-путь» — файл удаляется.
+
+BF-93 S2 week-10 "BF-93 Update the API documentation"
+    api/README.md
+
+BF-94 S3 week-10 "BF-94 Update the web documentation"
+    web/README.md
+
+BF-95 S5 week-10 "BF-95 Update the README and run instructions"
+    Makefile
+    README.md
