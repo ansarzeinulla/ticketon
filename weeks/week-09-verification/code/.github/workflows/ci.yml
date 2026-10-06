@@ -1,0 +1,188 @@
+name: CI
+
+# Every suite the project has, on every push and pull request.
+#
+# The jobs are split by what they need rather than by layer: the database and
+# Go suites need PostgreSQL, the frontend checks need only Node, and the
+# end-to-end suite needs all three processes running at once. Splitting them
+# means a TypeScript error is reported in thirty seconds instead of after a
+# database has been provisioned.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database:
+    name: Database schema and rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The suite runs psql inside the container and waits on its health check,
+      # so compose is the right way to start it here too.
+      - name: Start PostgreSQL
+        run: |
+          cp .env.example .env
+          docker compose up -d
+          make wait
+
+      - name: Run the database tests
+        run: make test
+
+  api:
+    name: Go API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+
+      - name: Start PostgreSQL
+        run: |
+          cp .env.example .env
+          docker compose up -d
+          make wait
+
+      # gofmt and vet first: a formatting slip should not wait on the
+      # integration suite to be reported.
+      - name: Format, vet and test
+        run: make api-check
+
+  web:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+
+  mobile:
+    name: Scanner app typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  end-to-end:
+    name: Acceptance and browser suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Start PostgreSQL
+        run: |
+          cp .env.example .env
+          docker compose up -d
+          make wait
+
+      - name: Start the API
+        run: |
+          set -a && . ./.env && set +a
+          cd api && go build -o bin/api ./cmd/api
+          ./bin/api &
+          # The health endpoint checks the database too, so this waits for a
+          # genuinely usable API rather than just an open port.
+          for _ in $(seq 1 60); do
+            curl -fsS http://localhost:8080/health && break
+            sleep 1
+          done
+
+      - name: cURL acceptance checks
+        run: make api-smoke
+
+      - name: Build and start the dashboard
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+          npm run start &
+          for _ in $(seq 1 60); do
+            curl -fsS http://localhost:3000/login >/dev/null && break
+            sleep 1
+          done
+
+      - name: Browser end-to-end suite
+        working-directory: web
+        run: |
+          npx playwright install --with-deps chromium
+          npm run e2e
+
+      - name: Upload the Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: web/playwright-report
+          retention-days: 7
+
+  docker:
+    name: Container images build and run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # SRS 8 asks for a Docker-based demonstration deployment, so the images
+      # being buildable is itself a requirement worth checking.
+      - name: Bring the whole platform up
+        run: |
+          cp .env.example .env
+          docker compose --profile app up -d --build
+          for _ in $(seq 1 90); do
+            if [ "$(docker inspect -f '{{.State.Health.Status}}' biletflow-web)" = "healthy" ]; then
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Check every service answers
+        run: |
+          curl -fsS http://localhost:8080/health
+          curl -fsS -o /dev/null http://localhost:3000/login
+
+      - name: Show the logs if anything failed
+        if: failure()
+        run: docker compose --profile app logs

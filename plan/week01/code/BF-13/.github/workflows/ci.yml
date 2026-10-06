@@ -1,0 +1,64 @@
+name: CI
+
+# Every suite the project has, on every push to main and every pull request.
+# Jobs are split by what they need: the database suite needs PostgreSQL, the Go
+# and web checks do not, so a lint error is reported without waiting for a
+# database to start.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database:
+    name: Database schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start PostgreSQL
+        run: |
+          cp .env.example .env
+          docker compose up -d
+          make wait
+      - name: Run the database tests
+        run: make test
+
+  api:
+    name: Go API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - name: Format, vet and test
+        run: make api-check
+
+  web:
+    name: Web app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - name: Lint, typecheck and build
+        run: make web-check
+
+  docker:
+    name: Container images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t biletflow-api ./api
+      - run: docker build -t biletflow-web ./web

@@ -48,7 +48,7 @@ git switch -c week-02 && git push -u origin week-02
 | 3 | S1 Ansar | `bash ~/Desktop/bilet/plan/week02/S1-BF-16.sh` | BF-15 |
 | 4 | S2 Alibi | `bash ~/Desktop/bilet/plan/week02/S2-BF-17.sh` | `week-02` |
 | 5 | S3 Abylay | `bash ~/Desktop/bilet/plan/week02/S3-BF-18.sh` | `week-02` |
-| 6 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week02/S4-BF-20.sh` | BF-18 (Abylay) |
+| 6 | S4 Alinur | `bash ~/Desktop/bilet/plan/week02/S4-BF-20.sh` | BF-18 (Abylay) |
 | 7 | S3 Abylay | `bash ~/Desktop/bilet/plan/week02/S3-BF-19.sh` | BF-20 (Alinur) |
 | 8 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week02/S5-BF-21.sh` | `week-02` |
 | 9 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week02/S5-BF-22.sh` | `week-02` |

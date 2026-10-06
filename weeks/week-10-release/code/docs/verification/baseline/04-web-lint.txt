@@ -1,0 +1,5 @@
+cd web && npm run lint
+
+> web@0.1.0 lint
+> eslint
+

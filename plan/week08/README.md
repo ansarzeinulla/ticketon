@@ -75,8 +75,8 @@ git switch -c week-08 && git push -u origin week-08
 | 7 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week08/S5-BF-83.sh` | BF-B10 |
 | 8 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week08/S5-BF-82.sh` | `week-08` |
 | 9 | S3 Abylay | `bash ~/Desktop/bilet/plan/week08/S3-BF-79.sh` | `week-08` |
-| 10 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week08/S4-BF-80.sh` | BF-79 (Abylay) |
-| 11 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week08/S4-BF-81.sh` | BF-80 |
+| 10 | S4 Alinur | `bash ~/Desktop/bilet/plan/week08/S4-BF-80.sh` | BF-79 (Abylay) |
+| 11 | S4 Alinur | `bash ~/Desktop/bilet/plan/week08/S4-BF-81.sh` | BF-80 |
 
 Что внутри задач, коротко:
 

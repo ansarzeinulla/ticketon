@@ -57,11 +57,11 @@ git switch -c week-03 && git push -u origin week-03
 | 4 | S2 Alibi | `bash ~/Desktop/bilet/plan/week03/S2-BF-26.sh` | BF-25 |
 | 5 | S2 Alibi | `bash ~/Desktop/bilet/plan/week03/S2-BF-27.sh` | BF-26 |
 | 6 | S3 Abylay | `bash ~/Desktop/bilet/plan/week03/S3-BF-28.sh` | BF-27 (Alibi) |
-| 7 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week03/S4-BF-31.sh` | BF-28 (Abylay) |
-| 8 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week03/S4-BF-32.sh` | BF-31 |
+| 7 | S4 Alinur | `bash ~/Desktop/bilet/plan/week03/S4-BF-31.sh` | BF-28 (Abylay) |
+| 8 | S4 Alinur | `bash ~/Desktop/bilet/plan/week03/S4-BF-32.sh` | BF-31 |
 | 9 | S3 Abylay | `bash ~/Desktop/bilet/plan/week03/S3-BF-29.sh` | BF-32 (Alinur) |
 | 10 | S3 Abylay | `bash ~/Desktop/bilet/plan/week03/S3-BF-30.sh` | BF-29 |
-| 11 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week03/S4-BF-33.sh` | BF-30 (Abylay) |
+| 11 | S4 Alinur | `bash ~/Desktop/bilet/plan/week03/S4-BF-33.sh` | BF-30 (Abylay) |
 | 12 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week03/S5-BF-34.sh` | `week-03` |
 | 13 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week03/S5-BF-35.sh` | `week-03` |
 | 14 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week03/S5-BF-36.sh` | `week-03` |

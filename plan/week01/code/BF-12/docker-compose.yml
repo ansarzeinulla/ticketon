@@ -1,0 +1,37 @@
+# BiletFlow - local database
+#
+#   docker compose up -d     start PostgreSQL (schema auto-applied on first boot)
+#   make up / make down      the same through the Makefile
+#
+name: biletflow
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: biletflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-biletflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-biletflow_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-biletflow}
+      # Deterministic, locale-independent sorting for tests.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - biletflow_pgdata:/var/lib/postgresql/data
+      # Run alphabetically the FIRST time the volume is empty.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      # Mounted, not auto-run, so the test suite can execute them on demand.
+      - ./db/tests:/opt/biletflow/tests:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-biletflow} -d ${POSTGRES_DB:-biletflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  biletflow_pgdata:

@@ -68,8 +68,8 @@ git switch -c week-04 && git push -u origin week-04
 | 7 | S3 Abylay | `bash ~/Desktop/bilet/plan/week04/S3-BF-43.sh` | BF-42 (Alibi) |
 | 8 | S3 Abylay | `bash ~/Desktop/bilet/plan/week04/S3-BF-44.sh` | BF-43 |
 | 9 | S3 Abylay | `bash ~/Desktop/bilet/plan/week04/S3-BF-45.sh` | BF-44 |
-| 10 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week04/S4-BF-46.sh` | BF-45 (Abylay) |
-| 11 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week04/S4-BF-47.sh` | BF-46 |
+| 10 | S4 Alinur | `bash ~/Desktop/bilet/plan/week04/S4-BF-46.sh` | BF-45 (Abylay) |
+| 11 | S4 Alinur | `bash ~/Desktop/bilet/plan/week04/S4-BF-47.sh` | BF-46 |
 | 12 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week04/S5-BF-48.sh` | `week-04` |
 | 13 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week04/S5-BF-49.sh` | `week-04` |
 

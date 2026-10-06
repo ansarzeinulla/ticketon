@@ -24,7 +24,7 @@ case "$WHO" in
   S1) NAME="Ansar Zeinulla";    EMAIL="ansar.zeinulla.a@gmail.com" ;;
   S2) NAME="Alibi Takhtanov";   EMAIL="takhtanovalb@gmail.com" ;;
   S3) NAME="Abylay Otaubay";    EMAIL="o.abyl247@gmail.com" ;;
-  S4) NAME="Alinur Burlybayev"; EMAIL="${ALINUR_EMAIL:-}" ;;
+  S4) NAME="Alinur Burlybayev"; EMAIL="${ALINUR_EMAIL:-alinur.burlybayev@nu.edu.kz}" ;;
   S5) NAME="Olzhas Nurseit";    EMAIL="olzhasnrseit@gmail.com" ;;
   *) echo "неизвестный студент: $WHO" >&2; exit 2 ;;
 esac
@@ -49,13 +49,30 @@ fi
 cd "$REPO"
 git fetch -q origin --prune
 if ! git rev-parse -q --verify "$BASE" >/dev/null; then
-  echo "Нет базы $BASE." >&2
-  if [ "$BASE" = "origin/$WEEK_BRANCH" ]; then
-    echo "Капитан ещё не создал ветку недели $WEEK_BRANCH." >&2
-  else
-    echo "Эта задача строится поверх ${BASE#origin/}: сначала её владелец должен запустить свой скрипт." >&2
+  # GitHub удаляет ветку после слияния PR. Если базу уже влили в ветку недели,
+  # её коммит там есть, и строиться надо поверх недели: PR тогда покажет ровно
+  # один коммит — свой.
+  BASE_TICKET="$(printf '%s' "$BASE" | sed -E 's/.*-(BF-[A-Za-z0-9-]+)$/\1/')"
+  # Темы коммитов недели читаются в переменную, а не через `git log | grep -q`:
+  # под `set -o pipefail` grep закрывает канал первым, git log получает SIGPIPE,
+  # и весь конвейер возвращает 141 — условие всегда оказывалось ложным.
+  WEEK_SUBJECTS=""
+  if git rev-parse -q --verify "origin/$WEEK_BRANCH" >/dev/null; then
+    WEEK_SUBJECTS="$(git log --format=%s "origin/$WEEK_BRANCH")"
   fi
-  exit 1
+  if [ "$BASE" != "origin/$WEEK_BRANCH" ] \
+     && grep -q "^$BASE_TICKET " <<<"$WEEK_SUBJECTS"; then
+    echo "База ${BASE#origin/} уже влита в $WEEK_BRANCH и удалена — строим поверх origin/$WEEK_BRANCH."
+    BASE="origin/$WEEK_BRANCH"
+  else
+    echo "Нет базы $BASE." >&2
+    if [ "$BASE" = "origin/$WEEK_BRANCH" ]; then
+      echo "Капитан ещё не создал ветку недели $WEEK_BRANCH." >&2
+    else
+      echo "Эта задача строится поверх ${BASE#origin/}: сначала её владелец должен запустить свой скрипт." >&2
+    fi
+    exit 1
+  fi
 fi
 if git rev-parse -q --verify "origin/$BRANCH" >/dev/null; then
   echo "Ветка $BRANCH уже есть на GitHub — задача уже запушена. Повторно не запускайте." >&2

@@ -76,10 +76,10 @@ git switch -c week-06 && git push -u origin week-06
 | 6 | S1 Ansar | `bash ~/Desktop/bilet/plan/week06/S1-BF-59.sh` | BF-B1 (Olzhas) |
 | 7 | S1 Ansar | `bash ~/Desktop/bilet/plan/week06/S1-BF-60.sh` | BF-59 |
 | 8 | S3 Abylay | `bash ~/Desktop/bilet/plan/week06/S3-BF-64.sh` | BF-60 (Ansar) |
-| 9 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week06/S4-BF-B2.sh` | BF-64 (Abylay) |
-| 10 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week06/S4-BF-B3.sh` | BF-B2 |
+| 9 | S4 Alinur | `bash ~/Desktop/bilet/plan/week06/S4-BF-B2.sh` | BF-64 (Abylay) |
+| 10 | S4 Alinur | `bash ~/Desktop/bilet/plan/week06/S4-BF-B3.sh` | BF-B2 |
 | 11 | S3 Abylay | `bash ~/Desktop/bilet/plan/week06/S3-BF-63.sh` | BF-B3 (Alinur) |
-| 12 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week06/S4-BF-65.sh` | BF-63 (Abylay) |
+| 12 | S4 Alinur | `bash ~/Desktop/bilet/plan/week06/S4-BF-65.sh` | BF-63 (Abylay) |
 | 13 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week06/S5-BF-67.sh` | BF-65 (Alinur) |
 
 `BF-58` от цепочки не зависит — её можно запускать когда угодно.

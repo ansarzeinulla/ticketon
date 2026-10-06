@@ -68,9 +68,9 @@ git switch -c week-07 && git push -u origin week-07
 | 4 | S3 Abylay | `bash ~/Desktop/bilet/plan/week07/S3-BF-71.sh` | BF-70 (Alibi) |
 | 5 | S3 Abylay | `bash ~/Desktop/bilet/plan/week07/S3-BF-72.sh` | BF-71 |
 | 6 | S3 Abylay | `bash ~/Desktop/bilet/plan/week07/S3-BF-73.sh` | BF-72 |
-| 7 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week07/S4-BF-74.sh` | BF-73 (Abylay) |
-| 8 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week07/S4-BF-75.sh` | BF-74 |
-| 9 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week07/S4-BF-B4.sh` | BF-75 |
+| 7 | S4 Alinur | `bash ~/Desktop/bilet/plan/week07/S4-BF-74.sh` | BF-73 (Abylay) |
+| 8 | S4 Alinur | `bash ~/Desktop/bilet/plan/week07/S4-BF-75.sh` | BF-74 |
+| 9 | S4 Alinur | `bash ~/Desktop/bilet/plan/week07/S4-BF-B4.sh` | BF-75 |
 | 10 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week07/S5-BF-76.sh` | BF-B4 (Alinur) |
 
 Что внутри задач, коротко:

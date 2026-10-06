@@ -77,7 +77,7 @@ git switch -c week-05 && git push -u origin week-05
 | 4 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week05/S5-BF-55.sh` | BF-50 (Ansar) |
 | 5 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week05/S5-BF-56.sh` | BF-55 |
 | 6 | S5 Olzhas | `bash ~/Desktop/bilet/plan/week05/S5-BF-57.sh` | BF-56 |
-| 7 | S4 Alinur | `ALINUR_EMAIL=почта-github bash ~/Desktop/bilet/plan/week05/S4-BF-54.sh` | `week-05` |
+| 7 | S4 Alinur | `bash ~/Desktop/bilet/plan/week05/S4-BF-54.sh` | `week-05` |
 | 8 | S3 Abylay | `bash ~/Desktop/bilet/plan/week05/S3-BF-53.sh` | BF-54 (Alinur) |
 
 Проверить без пуша: `DRY_RUN=1 bash …/S4-BF-54.sh` — коммит создаётся и сразу
